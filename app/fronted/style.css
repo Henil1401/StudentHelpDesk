@@ -1,0 +1,592 @@
+/* ==========================================
+   RESET
+========================================== */
+
+* {
+
+    margin: 0;
+
+    padding: 0;
+
+    box-sizing: border-box;
+
+}
+
+
+/* ==========================================
+   BODY
+========================================== */
+
+body {
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    min-height: 100vh;
+
+    background:
+        linear-gradient(
+            135deg,
+            #eef4ff,
+            #f8fbff
+        );
+
+    color: #1f2937;
+
+}
+
+
+/* ==========================================
+   MAIN CONTAINER
+========================================== */
+
+.container {
+
+    width: 90%;
+
+    max-width: 1000px;
+
+    margin: auto;
+
+    padding: 30px 0;
+
+}
+
+
+/* ==========================================
+   HEADER
+========================================== */
+
+header {
+
+    text-align: center;
+
+    padding: 35px 20px;
+
+    margin-bottom: 25px;
+
+}
+
+
+.logo {
+
+    font-size: 55px;
+
+    margin-bottom: 10px;
+
+}
+
+
+header h1 {
+
+    font-size: 38px;
+
+    margin-bottom: 10px;
+
+    color: #123c7a;
+
+}
+
+
+header p {
+
+    font-size: 16px;
+
+    color: #64748b;
+
+}
+
+
+/* ==========================================
+   MAIN
+========================================== */
+
+main {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 22px;
+
+}
+
+
+/* ==========================================
+   QUESTION BOX
+========================================== */
+
+.question-box {
+
+    background: white;
+
+    padding: 28px;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.08);
+
+}
+
+
+.question-box label {
+
+    display: block;
+
+    font-size: 18px;
+
+    font-weight: bold;
+
+    margin-bottom: 12px;
+
+}
+
+
+textarea {
+
+    width: 100%;
+
+    min-height: 130px;
+
+    padding: 18px;
+
+    resize: vertical;
+
+    border: 2px solid #dbe4f0;
+
+    border-radius: 12px;
+
+    font-size: 16px;
+
+    outline: none;
+
+    transition: 0.2s;
+
+}
+
+
+textarea:focus {
+
+    border-color: #1976d2;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(25, 118, 210, 0.12);
+
+}
+
+
+/* ==========================================
+   BUTTON ROW
+========================================== */
+
+.button-row {
+
+    display: flex;
+
+    gap: 12px;
+
+    margin-top: 15px;
+
+}
+
+
+/* ==========================================
+   ASK BUTTON
+========================================== */
+
+#askButton {
+
+    flex: 1;
+
+    border: none;
+
+    padding: 15px;
+
+    border-radius: 10px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #1976d2,
+            #0d47a1
+        );
+
+    color: white;
+
+    font-size: 17px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+
+}
+
+
+#askButton:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 6px 15px
+        rgba(13, 71, 161, 0.25);
+
+}
+
+
+#askButton:disabled {
+
+    opacity: 0.6;
+
+    cursor: not-allowed;
+
+}
+
+
+/* ==========================================
+   CLEAR BUTTON
+========================================== */
+
+.clear-button {
+
+    padding: 15px 22px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: #e5e7eb;
+
+    color: #374151;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+}
+
+
+.clear-button:hover {
+
+    background: #d1d5db;
+
+}
+
+
+/* ==========================================
+   LOADING
+========================================== */
+
+.loading {
+
+    display: none;
+
+    text-align: center;
+
+    padding: 15px;
+
+    background: #e8f1ff;
+
+    color: #1457a6;
+
+    border-radius: 12px;
+
+    font-weight: bold;
+
+}
+
+
+/* ==========================================
+   ANSWER BOX
+========================================== */
+
+.answer-box {
+
+    background: white;
+
+    padding: 28px;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.08);
+
+}
+
+
+.answer-box h2 {
+
+    margin-bottom: 18px;
+
+    color: #123c7a;
+
+}
+
+
+.answer {
+
+    background: #f7faff;
+
+    border-left: 5px solid #1976d2;
+
+    padding: 20px;
+
+    border-radius: 10px;
+
+    line-height: 1.7;
+
+    font-size: 16px;
+
+    white-space: pre-wrap;
+
+}
+
+
+/* ==========================================
+   DETAILS
+========================================== */
+
+.details {
+
+    display: flex;
+
+    gap: 15px;
+
+    margin-top: 20px;
+
+    flex-wrap: wrap;
+
+}
+
+
+.detail-card {
+
+    background: #f1f5f9;
+
+    padding: 12px 18px;
+
+    border-radius: 10px;
+
+    display: flex;
+
+    gap: 8px;
+
+}
+
+
+.detail-card span {
+
+    color: #64748b;
+
+}
+
+
+.detail-card strong {
+
+    color: #123c7a;
+
+}
+
+
+/* ==========================================
+   CHAT HISTORY
+========================================== */
+
+.chat-history {
+
+    background: white;
+
+    padding: 28px;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.08);
+
+}
+
+
+.history-header {
+
+    margin-bottom: 18px;
+
+}
+
+
+.history-header h2 {
+
+    color: #123c7a;
+
+}
+
+
+.empty-history {
+
+    color: #94a3b8;
+
+    text-align: center;
+
+    padding: 20px;
+
+}
+
+
+/* ==========================================
+   HISTORY ITEM
+========================================== */
+
+.history-item {
+
+    background: #f8fafc;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 12px;
+
+    padding: 18px;
+
+    margin-bottom: 15px;
+
+}
+
+
+.history-question {
+
+    color: #123c7a;
+
+    margin-bottom: 12px;
+
+    line-height: 1.5;
+
+}
+
+
+.history-answer {
+
+    color: #334155;
+
+    line-height: 1.6;
+
+    margin-bottom: 10px;
+
+}
+
+
+.history-type {
+
+    display: inline-block;
+
+    padding: 5px 10px;
+
+    background: #e0ecff;
+
+    color: #1457a6;
+
+    border-radius: 20px;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+}
+
+
+/* ==========================================
+   FOOTER
+========================================== */
+
+footer {
+
+    text-align: center;
+
+    padding: 30px 10px;
+
+    color: #64748b;
+
+}
+
+
+footer p {
+
+    font-weight: bold;
+
+    margin-bottom: 5px;
+
+}
+
+
+footer span {
+
+    font-size: 13px;
+
+}
+
+
+/* ==========================================
+   MOBILE RESPONSIVE
+========================================== */
+
+@media (max-width: 600px) {
+
+
+    .container {
+
+        width: 94%;
+
+        padding: 15px 0;
+
+    }
+
+
+    header h1 {
+
+        font-size: 28px;
+
+    }
+
+
+    header p {
+
+        font-size: 14px;
+
+    }
+
+
+    .question-box,
+    .answer-box,
+    .chat-history {
+
+        padding: 18px;
+
+    }
+
+
+    .button-row {
+
+        flex-direction: column;
+
+    }
+
+
+    .details {
+
+        flex-direction: column;
+
+    }
+
+
+    .detail-card {
+
+        justify-content: space-between;
+
+    }
+
+}

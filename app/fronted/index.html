@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>AI Student Help Desk</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    background:#f4f7fb;
+    color:#1f2937;
+    min-height:100vh;
+}
+
+header{
+    background:linear-gradient(135deg,#2563eb,#4f46e5);
+    color:white;
+    padding:28px 20px;
+    text-align:center;
+    box-shadow:0 4px 15px rgba(0,0,0,.12);
+}
+
+header h1{
+    font-size:30px;
+    margin-bottom:8px;
+}
+
+header p{
+    font-size:15px;
+    opacity:.9;
+}
+
+.container{
+    width:92%;
+    max-width:1100px;
+    margin:30px auto;
+}
+
+.dashboard{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:15px;
+    margin-bottom:25px;
+}
+
+.stat-card{
+    background:white;
+    border-radius:15px;
+    padding:20px;
+    box-shadow:0 6px 20px rgba(0,0,0,.06);
+    text-align:center;
+}
+
+.stat-icon{
+    font-size:28px;
+    margin-bottom:8px;
+}
+
+.stat-number{
+    font-size:27px;
+    font-weight:bold;
+    color:#2563eb;
+}
+
+.stat-title{
+    font-size:13px;
+    color:#6b7280;
+    margin-top:5px;
+}
+
+.main-card{
+    background:white;
+    border-radius:18px;
+    padding:25px;
+    box-shadow:0 8px 30px rgba(0,0,0,.08);
+}
+
+.question-section{
+    margin-bottom:25px;
+}
+
+.question-title{
+    font-size:20px;
+    font-weight:bold;
+    margin-bottom:12px;
+    color:#2563eb;
+}
+
+textarea{
+    width:100%;
+    resize:vertical;
+    min-height:100px;
+    border:2px solid #e5e7eb;
+    border-radius:12px;
+    padding:15px;
+    font-family:inherit;
+    font-size:15px;
+    outline:none;
+    transition:.2s;
+}
+
+textarea:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.1);
+}
+
+.input-bottom{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:10px;
+}
+
+.shortcut{
+    font-size:12px;
+    color:#9ca3af;
+}
+
+#askButton{
+    border:none;
+    background:linear-gradient(135deg,#2563eb,#4f46e5);
+    color:white;
+    padding:12px 25px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:15px;
+    font-weight:bold;
+}
+
+#askButton:hover{
+    transform:translateY(-1px);
+}
+
+#askButton:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+}
+
+.answer-box{
+    background:#f8fafc;
+    border:1px solid #e5e7eb;
+    border-radius:14px;
+    padding:20px;
+}
+
+.answer-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:15px;
+    padding-bottom:12px;
+    border-bottom:1px solid #e5e7eb;
+}
+
+.answer-header span:first-child{
+    font-weight:bold;
+    color:#2563eb;
+}
+
+.status{
+    font-size:12px;
+    background:#dcfce7;
+    color:#166534;
+    padding:5px 10px;
+    border-radius:20px;
+}
+
+#answer{
+    min-height:70px;
+    line-height:1.7;
+    color:#374151;
+    white-space:pre-wrap;
+}
+
+.answer-info{
+    display:flex;
+    gap:30px;
+    margin-top:18px;
+    padding-top:15px;
+    border-top:1px solid #e5e7eb;
+    font-size:13px;
+    color:#6b7280;
+}
+
+.answer-info strong{
+    color:#2563eb;
+}
+
+.history-section,
+.ticket-section{
+    margin-top:25px;
+    background:white;
+    border-radius:18px;
+    padding:22px;
+    box-shadow:0 8px 30px rgba(0,0,0,.06);
+}
+
+.history-title,
+.ticket-title{
+    font-size:20px;
+    margin-bottom:18px;
+}
+
+.history-item{
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:12px;
+    background:#f9fafb;
+}
+
+.history-question{
+    line-height:1.6;
+    margin-bottom:12px;
+}
+
+.history-answer{
+    color:#4b5563;
+    line-height:1.6;
+    padding-top:10px;
+    border-top:1px solid #e5e7eb;
+}
+
+.history-meta{
+    margin-top:10px;
+    font-size:11px;
+    color:#9ca3af;
+}
+
+.empty-history{
+    text-align:center;
+    padding:20px;
+    color:#9ca3af;
+    font-size:14px;
+}
+
+.clear-container{
+    margin-top:18px;
+    text-align:center;
+}
+
+.clear-history{
+    border:none;
+    background:#fee2e2;
+    color:#dc2626;
+    padding:10px 18px;
+    border-radius:9px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.ticket-label{
+    display:block;
+    font-weight:bold;
+    margin-bottom:8px;
+}
+
+#ticketQuestion{
+    min-height:100px;
+}
+
+.ticket-controls{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-top:10px;
+    flex-wrap:wrap;
+}
+
+#ticketIntent{
+    padding:11px;
+    border:1px solid #e5e7eb;
+    border-radius:9px;
+    font-size:14px;
+    background:white;
+}
+
+#createTicketButton{
+    border:none;
+    background:#2563eb;
+    color:white;
+    padding:11px 18px;
+    border-radius:9px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+#createTicketButton:disabled{
+    opacity:.6;
+}
+
+#refreshTicketsButton{
+    border:none;
+    background:#e0e7ff;
+    color:#3730a3;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.ticket-result{
+    display:none;
+    margin-top:18px;
+    padding:15px;
+    border-radius:10px;
+    background:#f0fdf4;
+    border:1px solid #bbf7d0;
+    line-height:1.7;
+}
+
+.ticket-result.error{
+    background:#fef2f2;
+    border-color:#fecaca;
+    color:#991b1b;
+}
+
+.tickets-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:25px;
+    margin-bottom:12px;
+}
+
+.ticket-card{
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:12px;
+    background:#f9fafb;
+}
+
+.ticket-card-id{
+    margin-bottom:10px;
+    font-weight:bold;
+    color:#2563eb;
+}
+
+.ticket-card-question{
+    line-height:1.6;
+    margin-bottom:10px;
+}
+
+.ticket-card-meta{
+    font-size:13px;
+    color:#6b7280;
+    margin-bottom:12px;
+    line-height:1.6;
+}
+
+.ticket-status-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.ticket-status-select{
+    padding:7px 10px;
+    border:1px solid #e5e7eb;
+    border-radius:7px;
+    background:white;
+}
+
+.update-ticket-button{
+    border:none;
+    background:#4f46e5;
+    color:white;
+    padding:7px 12px;
+    border-radius:7px;
+    cursor:pointer;
+    font-size:12px;
+    font-weight:bold;
+}
+
+footer{
+    text-align:center;
+    padding:25px 15px;
+    color:#6b7280;
+    font-size:13px;
+}
+
+.footer-small{
+    margin-top:6px;
+    font-size:11px;
+    color:#9ca3af;
+}
+
+@media(max-width:700px){
+    .dashboard{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .input-bottom{
+        flex-direction:column;
+        align-items:stretch;
+        gap:10px;
+    }
+
+    #askButton{
+        width:100%;
+    }
+
+    .answer-info{
+        flex-direction:column;
+        gap:8px;
+    }
+}
+
+@media(max-width:450px){
+    .dashboard{
+        grid-template-columns:1fr 1fr;
+    }
+
+    header h1{
+        font-size:24px;
+    }
+
+    .container{
+        width:95%;
+        margin-top:15px;
+    }
+
+    .main-card{
+        padding:16px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🤖 AI Student Help Desk</h1>
+    <p>Cloud-Based AI Agent for Student Support</p>
+</header>
+
+<main class="container">
+
+<div class="dashboard">
+
+    <div class="stat-card">
+        <div class="stat-icon">❓</div>
+        <div class="stat-number" id="totalQuestions">0</div>
+        <div class="stat-title">Total Questions</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon">🎫</div>
+        <div class="stat-number" id="totalTickets">0</div>
+        <div class="stat-title">Total Tickets</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon">🔓</div>
+        <div class="stat-number" id="openTickets">0</div>
+        <div class="stat-title">Open Tickets</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-number" id="resolvedTickets">0</div>
+        <div class="stat-title">Resolved Tickets</div>
+    </div>
+
+</div>
+
+
+<div class="main-card">
+
+    <div class="question-section">
+
+        <div class="question-title">
+            💬 Ask Your Question
+        </div>
+
+        <textarea
+            id="questionInput"
+            placeholder="Ask your university-related question here..."
+            rows="3"
+        ></textarea>
+
+        <div class="input-bottom">
+
+            <span class="shortcut">
+                Ctrl + Enter to send
+            </span>
+
+            <button
+                type="button"
+                id="askButton"
+            >
+                Ask AI
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div class="answer-box">
+
+        <div class="answer-header">
+
+            <span>
+                🤖 AI Assistant
+            </span>
+
+            <span
+                id="status"
+                class="status"
+            >
+                Ready
+            </span>
+
+        </div>
+
+        <div id="answer">
+            Your answer will appear here...
+        </div>
+
+        <div class="answer-info">
+
+            <span>
+                Confidence:
+                <strong id="confidence">-</strong>
+            </span>
+
+            <span>
+                Agent:
+                <strong id="agentType">
+                    AI Student Help Desk
+                </strong>
+            </span>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="history-section">
+
+    <h3 class="history-title">
+        📜 Question History
+    </h3>
+
+    <div id="history">
+
+        <div class="empty-history">
+            No questions asked yet.
+        </div>
+
+    </div>
+
+    <div class="clear-container">
+
+        <button
+            type="button"
+            id="clearHistoryButton"
+            class="clear-history"
+        >
+            🗑 Clear History
+        </button>
+
+    </div>
+
+</div>
+
+
+<div class="ticket-section">
+
+    <h3 class="ticket-title">
+        🎫 Ticket Management
+    </h3>
+
+    <label
+        class="ticket-label"
+        for="ticketQuestion"
+    >
+        Create Support Ticket
+    </label>
+
+    <textarea
+        id="ticketQuestion"
+        placeholder="Describe your problem..."
+        rows="3"
+    ></textarea>
+
+    <div class="ticket-controls">
+
+        <select id="ticketIntent">
+
+            <option value="general">
+                General
+            </option>
+
+            <option value="fees">
+                Fees
+            </option>
+
+            <option value="hostel">
+                Hostel
+            </option>
+
+            <option value="exam">
+                Exam
+            </option>
+
+            <option value="technical">
+                Technical
+            </option>
+
+            <option value="faculty">
+                Faculty
+            </option>
+
+        </select>
+
+        <button
+            type="button"
+            id="createTicketButton"
+        >
+            🎫 Create Ticket
+        </button>
+
+    </div>
+
+    <div
+        id="ticketResult"
+        class="ticket-result"
+    ></div>
+
+    <div class="tickets-header">
+
+        <strong>
+            📋 All Tickets
+        </strong>
+
+        <button
+            type="button"
+            id="refreshTicketsButton"
+        >
+            🔄 Refresh
+        </button>
+
+    </div>
+
+    <div id="ticketsList">
+
+        <div class="empty-history">
+            No tickets loaded yet.
+        </div>
+
+    </div>
+
+</div>
+
+</main>
+
+
+<footer>
+
+<p>
+AI Student Help Desk • Cloud-Based AI Agent
+</p>
+
+<p class="footer-small">
+Powered by RAG + FAISS + Sentence Transformers
+</p>
+
+</footer>
+
+
+<script>
+
+const API_BASE_URL = "http://127.0.0.1:8000";
+const API_URL = API_BASE_URL + "/ask";
+
+
+const questionInput =
+document.getElementById("questionInput");
+
+const answerBox =
+document.getElementById("answer");
+
+const confidenceBox =
+document.getElementById("confidence");
+
+const statusBadge =
+document.getElementById("status");
+
+const agentTypeBox =
+document.getElementById("agentType");
+
+const askButton =
+document.getElementById("askButton");
+
+const historyBox =
+document.getElementById("history");
+
+const clearHistoryButton =
+document.getElementById("clearHistoryButton");
+
+const ticketQuestion =
+document.getElementById("ticketQuestion");
+
+const ticketIntent =
+document.getElementById("ticketIntent");
+
+const createTicketButton =
+document.getElementById("createTicketButton");
+
+const ticketResult =
+document.getElementById("ticketResult");
+
+const refreshTicketsButton =
+document.getElementById("refreshTicketsButton");
+
+const ticketsList =
+document.getElementById("ticketsList");
+
+const totalQuestions =
+document.getElementById("totalQuestions");
+
+const totalTickets =
+document.getElementById("totalTickets");
+
+const openTickets =
+document.getElementById("openTickets");
+
+const resolvedTickets =
+document.getElementById("resolvedTickets");
+
+
+/* =====================================================
+   SAFE LOCAL STORAGE
+===================================================== */
+
+function safeStorageGet(key){
+
+    try{
+        return window.localStorage.getItem(key);
+    }
+    catch(error){
+        console.warn("LocalStorage read blocked:", error);
+        return null;
+    }
+}
+
+
+function safeStorageSet(key,value){
+
+    try{
+        window.localStorage.setItem(
+            key,
+            String(value)
+        );
+    }
+    catch(error){
+        console.warn("LocalStorage save blocked:", error);
+    }
+}
+
+
+function safeStorageRemove(key){
+
+    try{
+        window.localStorage.removeItem(key);
+    }
+    catch(error){
+        console.warn("LocalStorage remove blocked:", error);
+    }
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHTML(text){
+
+    if(
+        text === null ||
+        text === undefined
+    ){
+        return "";
+    }
+
+    return String(text)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+}
+
+
+/* =====================================================
+   CURRENT QUESTION
+===================================================== */
+
+function saveCurrentQuestion(){
+
+    safeStorageSet(
+        "studentHelpDeskCurrentQuestion",
+        questionInput.value
+    );
+}
+
+
+function loadCurrentQuestion(){
+
+    const saved =
+    safeStorageGet(
+        "studentHelpDeskCurrentQuestion"
+    );
+
+    if(saved !== null){
+        questionInput.value = saved;
+    }
+}
+
+
+/* =====================================================
+   ANSWER SAVE
+===================================================== */
+
+function saveCurrentAnswer(
+    answerText,
+    confidenceText,
+    agentText
+){
+
+    safeStorageSet(
+        "studentHelpDeskLastAnswer",
+        answerText
+    );
+
+    safeStorageSet(
+        "studentHelpDeskLastConfidence",
+        confidenceText
+    );
+
+    safeStorageSet(
+        "studentHelpDeskLastAgent",
+        agentText
+    );
+}
+
+
+function loadLastAnswer(){
+
+    const savedAnswer =
+    safeStorageGet(
+        "studentHelpDeskLastAnswer"
+    );
+
+    const savedConfidence =
+    safeStorageGet(
+        "studentHelpDeskLastConfidence"
+    );
+
+    const savedAgent =
+    safeStorageGet(
+        "studentHelpDeskLastAgent"
+    );
+
+    if(savedAnswer !== null){
+
+        answerBox.innerText =
+        savedAnswer;
+
+        confidenceBox.innerText =
+        savedConfidence || "-";
+
+        agentTypeBox.innerText =
+        savedAgent ||
+        "AI Student Help Desk";
+
+        statusBadge.innerText =
+        "Answered";
+    }
+}
+
+
+/* =====================================================
+   HISTORY
+===================================================== */
+
+function getSavedHistory(){
+
+    const saved =
+    safeStorageGet(
+        "studentHelpDeskHistory"
+    );
+
+    if(!saved){
+        return [];
+    }
+
+    try{
+
+        const data =
+        JSON.parse(saved);
+
+        return Array.isArray(data)
+            ? data
+            : [];
+
+    }
+    catch(error){
+
+        return [];
+    }
+}
+
+
+function saveHistory(
+    question,
+    answerText,
+    confidenceText,
+    agentText
+){
+
+    const data =
+    getSavedHistory();
+
+    data.unshift({
+
+        question:question,
+
+        answer:answerText,
+
+        confidence:confidenceText,
+
+        agent:agentText
+    });
+
+    safeStorageSet(
+        "studentHelpDeskHistory",
+        JSON.stringify(
+            data.slice(0,50)
+        )
+    );
+
+    updateQuestionCount();
+}
+
+
+function createHistoryItem(
+    question,
+    answerText,
+    confidenceText,
+    agentText,
+    addToTop=true
+){
+
+    const empty =
+    historyBox.querySelector(
+        ".empty-history"
+    );
+
+    if(empty){
+        empty.remove();
+    }
+
+    const item =
+    document.createElement("div");
+
+    item.className =
+    "history-item";
+
+    item.innerHTML = `
+
+        <div class="history-question">
+
+            <strong>
+                Question:
+            </strong>
+
+            <br>
+
+            ${escapeHTML(question)}
+
+        </div>
+
+        <div class="history-answer">
+
+            <strong>
+                Answer:
+            </strong>
+
+            <br>
+
+            ${escapeHTML(answerText)}
+
+        </div>
+
+        <div class="history-meta">
+
+            Confidence:
+            ${escapeHTML(
+                confidenceText || "-"
+            )}
+
+            &nbsp; • &nbsp;
+
+            Agent:
+            ${escapeHTML(
+                agentText ||
+                "AI Student Help Desk"
+            )}
+
+        </div>
+    `;
+
+    if(
+        addToTop &&
+        historyBox.firstChild
+    ){
+
+        historyBox.insertBefore(
+            item,
+            historyBox.firstChild
+        );
+
+    }
+    else{
+
+        historyBox.appendChild(item);
+    }
+}
+
+
+function loadHistory(){
+
+    const data =
+    getSavedHistory();
+
+    if(data.length === 0){
+
+        updateQuestionCount();
+
+        return;
+    }
+
+    historyBox.innerHTML = "";
+
+    data.forEach(function(item){
+
+        createHistoryItem(
+
+            item.question || "",
+
+            item.answer || "",
+
+            item.confidence || "-",
+
+            item.agent ||
+            "AI Student Help Desk",
+
+            false
+        );
+    });
+
+    updateQuestionCount();
+}
+
+
+function updateQuestionCount(){
+
+    const data =
+    getSavedHistory();
+
+    totalQuestions.innerText =
+    String(data.length);
+}
+
+
+/* =====================================================
+   ASK QUESTION
+===================================================== */
+
+async function askQuestion(){
+
+    const question =
+    questionInput.value.trim();
+
+
+    if(!question){
+
+        answerBox.innerText =
+        "Please enter a question.";
+
+        statusBadge.innerText =
+        "Waiting";
+
+        return;
+    }
+
+
+    /*
+       IMPORTANT:
+       First update UI.
+       LocalStorage failure cannot stop the request.
+    */
+
+    askButton.disabled = true;
+
+    askButton.innerText =
+    "Thinking...";
+
+    statusBadge.innerText =
+    "Searching...";
+
+    answerBox.innerText =
+    "Finding the best answer...";
+
+    confidenceBox.innerText =
+    "-";
+
+
+    try{
+
+        /*
+           Save question safely.
+           Even if LocalStorage is blocked,
+           this function will NOT throw.
+        */
+
+        saveCurrentQuestion();
+
+
+        const response =
+        await fetch(
+            API_URL,
+            {
+                method:"POST",
+
+                headers:{
+                    "Content-Type":
+                    "application/json"
+                },
+
+                body:JSON.stringify({
+                    question:question
+                })
+            }
+        );
+
+
+        const responseText =
+        await response.text();
+
+
+        let data;
+
+
+        try{
+
+            data =
+            JSON.parse(
+                responseText
+            );
+
+        }
+        catch(error){
+
+            throw new Error(
+                "Invalid backend response: " +
+                responseText.substring(
+                    0,
+                    100
+                )
+            );
+        }
+
+
+        if(!response.ok){
+
+            throw new Error(
+                data.message ||
+                data.detail ||
+                (
+                    "HTTP " +
+                    response.status
+                )
+            );
+        }
+
+
+        let finalAnswer =
+        data.answer ||
+        "Sorry, information not found.";
+
+
+        /*
+           Automatic ticket
+        */
+
+        if(data.ticket_id){
+
+            finalAnswer +=
+            "\n\n🎫 Ticket ID: " +
+            data.ticket_id;
+        }
+
+
+        const finalConfidence =
+        data.confidence ?? "-";
+
+
+        const finalAgent =
+        data.type ||
+        data.agent_type ||
+        "AI Student Help Desk";
+
+
+        answerBox.innerText =
+        finalAnswer;
+
+
+        confidenceBox.innerText =
+        String(
+            finalConfidence
+        );
+
+
+        agentTypeBox.innerText =
+        finalAgent;
+
+
+        if(
+            data.status ===
+            "ticket_created"
+        ){
+
+            statusBadge.innerText =
+            "Ticket Created";
+
+        }
+        else if(
+            data.status ===
+            "found"
+        ){
+
+            statusBadge.innerText =
+            "Answered";
+
+        }
+        else{
+
+            statusBadge.innerText =
+            data.status ||
+            "Answered";
+        }
+
+
+        saveCurrentAnswer(
+            finalAnswer,
+            finalConfidence,
+            finalAgent
+        );
+
+
+        saveHistory(
+            question,
+            finalAnswer,
+            finalConfidence,
+            finalAgent
+        );
+
+
+        createHistoryItem(
+            question,
+            finalAnswer,
+            finalConfidence,
+            finalAgent,
+            true
+        );
+
+
+        questionInput.value =
+        question;
+
+
+    }
+    catch(error){
+
+        console.error(
+            "Ask Error:",
+            error
+        );
+
+        answerBox.innerText =
+        "Unable to connect to Student Help Desk server.\n\n" +
+        error.message;
+
+        statusBadge.innerText =
+        "Error";
+    }
+    finally{
+
+        askButton.disabled =
+        false;
+
+        askButton.innerText =
+        "Ask AI";
+    }
+}
+
+
+/* =====================================================
+   CLEAR HISTORY
+===================================================== */
+
+function clearHistory(){
+
+    const confirmClear =
+    confirm(
+        "Are you sure you want to clear history and current answer?"
+    );
+
+    if(!confirmClear){
+        return;
+    }
+
+
+    safeStorageRemove(
+        "studentHelpDeskHistory"
+    );
+
+    safeStorageRemove(
+        "studentHelpDeskLastAnswer"
+    );
+
+    safeStorageRemove(
+        "studentHelpDeskLastConfidence"
+    );
+
+    safeStorageRemove(
+        "studentHelpDeskLastAgent"
+    );
+
+    safeStorageRemove(
+        "studentHelpDeskCurrentQuestion"
+    );
+
+
+    historyBox.innerHTML = `
+
+        <div class="empty-history">
+            No questions asked yet.
+        </div>
+    `;
+
+
+    questionInput.value =
+    "";
+
+
+    answerBox.innerText =
+    "Your answer will appear here...";
+
+
+    confidenceBox.innerText =
+    "-";
+
+
+    agentTypeBox.innerText =
+    "AI Student Help Desk";
+
+
+    statusBadge.innerText =
+    "Ready";
+
+
+    updateQuestionCount();
+}
+
+
+/* =====================================================
+   CREATE SUPPORT TICKET
+===================================================== */
+
+async function createSupportTicket(){
+
+    const question =
+    ticketQuestion.value.trim();
+
+
+    const intent =
+    ticketIntent.value;
+
+
+    if(!question){
+
+        alert(
+            "Please describe your problem first."
+        );
+
+        return;
+    }
+
+
+    createTicketButton.disabled =
+    true;
+
+
+    createTicketButton.innerText =
+    "Creating...";
+
+
+    ticketResult.classList.remove(
+        "error"
+    );
+
+
+    ticketResult.style.display =
+    "block";
+
+
+    ticketResult.innerHTML =
+    "Creating ticket...";
+
+
+    try{
+
+
+        const response =
+        await fetch(
+
+            API_BASE_URL +
+            "/create-ticket",
+
+            {
+
+                method:"POST",
+
+                headers:{
+                    "Content-Type":
+                    "application/json"
+                },
+
+                body:JSON.stringify({
+
+                    question:question,
+
+                    intent:intent
+                })
+            }
+        );
+
+
+        const data =
+        await response.json();
+
+
+        if(!response.ok){
+
+            throw new Error(
+                data.message ||
+                "Ticket creation failed."
+            );
+        }
+
+
+        if(
+            data.status !==
+            "success"
+        ){
+
+            throw new Error(
+                data.message ||
+                "Unable to create ticket."
+            );
+        }
+
+
+        const ticket =
+        data.ticket || {};
+
+
+        const ticketId =
+        ticket.ticket_id ||
+        ticket.id ||
+        "Generated";
+
+
+        const department =
+        ticket.department ||
+        ticket.faculty ||
+        "-";
+
+
+        const ticketStatus =
+        ticket.status ||
+        "open";
+
+
+        ticketResult.innerHTML = `
+
+            <strong>
+                ✅ Ticket Created Successfully
+            </strong>
+
+            <br><br>
+
+            Ticket ID:
+
+            <strong>
+                ${escapeHTML(ticketId)}
+            </strong>
+
+            <br>
+
+            Department:
+            ${escapeHTML(department)}
+
+            <br>
+
+            Status:
+            ${escapeHTML(ticketStatus)}
+        `;
+
+
+        ticketQuestion.value =
+        "";
+
+
+        await loadTickets();
+
+
+    }
+    catch(error){
+
+
+        console.error(
+            "Ticket Error:",
+            error
+        );
+
+
+        ticketResult.classList.add(
+            "error"
+        );
+
+
+        ticketResult.innerHTML = `
+
+            <strong>
+                ❌ Error
+            </strong>
+
+            <br><br>
+
+            ${escapeHTML(
+                error.message
+            )}
+        `;
+    }
+    finally{
+
+
+        createTicketButton.disabled =
+        false;
+
+
+        createTicketButton.innerText =
+        "🎫 Create Ticket";
+    }
+}
+
+
+/* =====================================================
+   LOAD TICKETS
+===================================================== */
+
+async function loadTickets(){
+
+    ticketsList.innerHTML = `
+
+        <div class="empty-history">
+            Loading tickets...
+        </div>
+    `;
+
+
+    try{
+
+
+        const response =
+        await fetch(
+            API_BASE_URL +
+            "/tickets"
+        );
+
+
+        const data =
+        await response.json();
+
+
+        if(!response.ok){
+
+            throw new Error(
+                data.message ||
+                "Unable to load tickets."
+            );
+        }
+
+
+        const tickets =
+        Array.isArray(
+            data.tickets
+        )
+        ?
+        data.tickets
+        :
+        [];
+
+
+        updateDashboard(
+            tickets
+        );
+
+
+        if(
+            tickets.length === 0
+        ){
+
+            ticketsList.innerHTML = `
+
+                <div class="empty-history">
+                    No tickets found.
+                </div>
+            `;
+
+            return;
+        }
+
+
+        ticketsList.innerHTML =
+        "";
+
+
+        tickets.forEach(
+            createTicketCard
+        );
+
+
+    }
+    catch(error){
+
+
+        console.error(
+            "Load Tickets Error:",
+            error
+        );
+
+
+        ticketsList.innerHTML = `
+
+            <div class="empty-history">
+
+                ❌ Unable to load tickets.
+
+                <br><br>
+
+                ${escapeHTML(
+                    error.message
+                )}
+
+            </div>
+        `;
+    }
+}
+
+
+/* =====================================================
+   DASHBOARD
+===================================================== */
+
+function updateDashboard(
+    tickets
+){
+
+    const safeTickets =
+    Array.isArray(tickets)
+    ?
+    tickets
+    :
+    [];
+
+
+    totalTickets.innerText =
+    String(
+        safeTickets.length
+    );
+
+
+    openTickets.innerText =
+    String(
+
+        safeTickets.filter(
+            function(ticket){
+
+                return String(
+                    ticket.status ||
+                    "open"
+                ).toLowerCase()
+                ===
+                "open";
+            }
+        ).length
+    );
+
+
+    resolvedTickets.innerText =
+    String(
+
+        safeTickets.filter(
+            function(ticket){
+
+                return String(
+                    ticket.status ||
+                    ""
+                ).toLowerCase()
+                ===
+                "resolved";
+            }
+        ).length
+    );
+}
+
+
+/* =====================================================
+   CREATE TICKET CARD
+===================================================== */
+
+function createTicketCard(
+    ticket
+){
+
+    const card =
+    document.createElement(
+        "div"
+    );
+
+
+    card.className =
+    "ticket-card";
+
+
+    const ticketId =
+    ticket.ticket_id ||
+    ticket.id ||
+    "-";
+
+
+    const question =
+    ticket.question ||
+    "-";
+
+
+    const intent =
+    ticket.intent ||
+    "general";
+
+
+    const department =
+    ticket.department ||
+    ticket.faculty ||
+    "-";
+
+
+    const ticketStatus =
+    ticket.status ||
+    "open";
+
+
+    card.innerHTML = `
+
+        <div class="ticket-card-id">
+
+            🎫 Ticket:
+            ${escapeHTML(ticketId)}
+
+        </div>
+
+
+        <div class="ticket-card-question">
+
+            <strong>
+                Problem:
+            </strong>
+
+            <br>
+
+            ${escapeHTML(question)}
+
+        </div>
+
+
+        <div class="ticket-card-meta">
+
+            <strong>
+                Intent:
+            </strong>
+
+            ${escapeHTML(intent)}
+
+            &nbsp; • &nbsp;
+
+            <strong>
+                Department:
+            </strong>
+
+            ${escapeHTML(department)}
+
+        </div>
+
+
+        <div class="ticket-status-row">
+
+            <strong>
+                Status:
+            </strong>
+
+
+            <select
+                class="ticket-status-select"
+            >
+
+                <option
+                    value="open"
+                    ${ticketStatus==="open"?"selected":""}
+                >
+                    Open
+                </option>
+
+
+                <option
+                    value="in_progress"
+                    ${ticketStatus==="in_progress"?"selected":""}
+                >
+                    In Progress
+                </option>
+
+
+                <option
+                    value="resolved"
+                    ${ticketStatus==="resolved"?"selected":""}
+                >
+                    Resolved
+                </option>
+
+            </select>
+
+
+            <button
+                type="button"
+                class="update-ticket-button"
+            >
+                Update
+            </button>
+
+        </div>
+    `;
+
+
+    const updateButton =
+    card.querySelector(
+        ".update-ticket-button"
+    );
+
+
+    const statusSelect =
+    card.querySelector(
+        ".ticket-status-select"
+    );
+
+
+    updateButton.addEventListener(
+        "click",
+        function(){
+
+            updateTicketStatus(
+                ticketId,
+                statusSelect.value
+            );
+        }
+    );
+
+
+    ticketsList.appendChild(
+        card
+    );
+}
+
+
+/* =====================================================
+   UPDATE TICKET STATUS
+===================================================== */
+
+async function updateTicketStatus(
+    ticketId,
+    statusValue
+){
+
+    try{
+
+
+        const response =
+        await fetch(
+
+            API_BASE_URL +
+            "/tickets/" +
+            encodeURIComponent(
+                ticketId
+            ),
+
+            {
+
+                method:"PATCH",
+
+                headers:{
+                    "Content-Type":
+                    "application/json"
+                },
+
+                body:JSON.stringify({
+                    status:statusValue
+                })
+            }
+        );
+
+
+        const data =
+        await response.json();
+
+
+        if(!response.ok){
+
+            throw new Error(
+                data.message ||
+                "Status update failed."
+            );
+        }
+
+
+        if(
+            data.status !==
+            "success"
+        ){
+
+            throw new Error(
+                data.message ||
+                "Unable to update ticket."
+            );
+        }
+
+
+        alert(
+            "Ticket status updated successfully."
+        );
+
+
+        await loadTickets();
+
+
+    }
+    catch(error){
+
+
+        console.error(
+            "Update Ticket Error:",
+            error
+        );
+
+
+        alert(
+            "Error: " +
+            error.message
+        );
+    }
+}
+
+
+/* =====================================================
+   EVENTS
+===================================================== */
+
+askButton.addEventListener(
+    "click",
+    askQuestion
+);
+
+
+questionInput.addEventListener(
+    "keydown",
+    function(event){
+
+        if(
+            event.ctrlKey &&
+            event.key === "Enter"
+        ){
+
+            event.preventDefault();
+
+            askQuestion();
+        }
+    }
+);
+
+
+questionInput.addEventListener(
+    "input",
+    saveCurrentQuestion
+);
+
+
+clearHistoryButton.addEventListener(
+    "click",
+    clearHistory
+);
+
+
+createTicketButton.addEventListener(
+    "click",
+    createSupportTicket
+);
+
+
+refreshTicketsButton.addEventListener(
+    "click",
+    loadTickets
+);
+
+
+/* =====================================================
+   PAGE LOAD
+===================================================== */
+
+window.addEventListener(
+    "load",
+    function(){
+
+        loadCurrentQuestion();
+
+        loadLastAnswer();
+
+        loadHistory();
+
+        loadTickets();
+
+        console.log(
+            "AI Student Help Desk Ready"
+        );
+    }
+);
+
+</script>
+
+</body>
+</html>
