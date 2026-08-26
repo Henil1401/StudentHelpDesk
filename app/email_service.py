@@ -2,6 +2,12 @@ import os
 import smtplib
 from email.message import EmailMessage
 
+from dotenv import load_dotenv
+
+
+# Load values from .env
+load_dotenv()
+
 
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
@@ -10,13 +16,14 @@ EMAIL_ADDRESS = os.getenv("STUDENT_HELPDESK_EMAIL")
 EMAIL_PASSWORD = os.getenv("STUDENT_HELPDESK_EMAIL_PASSWORD")
 
 
-def send_email(to_email: str, subject: str, message: str):
+def send_email(to_email, subject, message):
 
     if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
         print("EMAIL WARNING: Email credentials are not configured.")
         return False
 
     try:
+
         email = EmailMessage()
 
         email["From"] = EMAIL_ADDRESS
@@ -27,12 +34,7 @@ def send_email(to_email: str, subject: str, message: str):
 
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
-
-            server.login(
-                EMAIL_ADDRESS,
-                EMAIL_PASSWORD
-            )
-
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
             server.send_message(email)
 
         print("EMAIL SENT TO:", to_email)
@@ -47,22 +49,22 @@ def send_email(to_email: str, subject: str, message: str):
 
 
 def send_ticket_created_email(
-    to_email: str,
-    ticket_id: str,
-    question: str,
-    department: str
+    to_email,
+    ticket_id,
+    question,
+    department
 ):
 
-    subject = f"Student Help Desk - Ticket {ticket_id} Created"
+    subject = f"Student Help Desk - Ticket Created {ticket_id}"
 
     message = f"""
-Hello,
+Hello Student,
 
 Your support ticket has been created successfully.
 
 Ticket ID: {ticket_id}
 
-Question / Issue:
+Problem:
 {question}
 
 Department:
@@ -71,9 +73,9 @@ Department:
 Status:
 Open
 
-The concerned department will review your issue.
+The concerned department will review your request.
 
-Regards,
+Thank you,
 AI Student Help Desk
 """
 
@@ -85,32 +87,32 @@ AI Student Help Desk
 
 
 def send_ticket_status_email(
-    to_email: str,
-    ticket_id: str,
-    status: str
+    to_email,
+    ticket_id,
+    status
 ):
 
-    readable_status = status.replace(
-        "_",
-        " "
-    ).title()
+    readable_status = (
+        status
+        .replace("_", " ")
+        .title()
+    )
 
     subject = f"Student Help Desk - Ticket {ticket_id} Updated"
 
     message = f"""
-Hello,
+Hello Student,
 
 Your support ticket status has been updated.
 
-Ticket ID:
-{ticket_id}
+Ticket ID: {ticket_id}
 
 New Status:
 {readable_status}
 
-You can check the Student Help Desk for more information.
+You can check your ticket from the Student Help Desk.
 
-Regards,
+Thank you,
 AI Student Help Desk
 """
 
