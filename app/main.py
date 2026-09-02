@@ -1,5 +1,19 @@
-from fastapi import FastAPI, BackgroundTasks
+import hmac
+import os
+import re
+from pathlib import Path
+
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    HTTPException,
+    Request,
+    Response,
+    status
+)
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.rag import search_knowledge
@@ -8,12 +22,14 @@ from app.agent import run_agent
 from app.database.database import (
     get_tickets,
     get_ticket,
+    assign_ticket_to_user,
     update_ticket_status,
     save_chat,
     get_chat_history,
     get_users,
     save_user,
     get_user_by_email,
+    get_login_user_by_email,
     save_faculty_information,
     get_faculty_information,
     update_faculty_information,
@@ -28,6 +44,17 @@ from app.email_service import (
     send_ticket_status_email
 )
 
+from app.auth import (
+    COOKIE_NAME,
+    SESSION_HOURS,
+    create_login_session,
+    get_current_user,
+    hash_password,
+    logout_session,
+    require_roles,
+    verify_password
+)
+
 
 # =========================================================
 # FASTAPI APP
@@ -36,8 +63,16 @@ from app.email_service import (
 app = FastAPI(
     title="AI Student Help Desk",
     description="Cloud-Based AI Student Help Desk using RAG and Multi-Agent System",
-    version="1.0.0"
+    version="1.2.0"
 )
+
+
+# =========================================================
+# FRONTEND FILES
+# =========================================================
+
+APP_DIR = Path(__file__).resolve().parent
+FRONTEND_DIR = APP_DIR / "frontend"
 
 
 # =========================================================
@@ -89,6 +124,19 @@ class UserRequest(BaseModel):
     role: str = "student"
 
 
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    role: str = "student"
+    access_code: str = ""
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
 # =========================================================
 # GET STUDENT EMAIL
 # =========================================================
@@ -123,11 +171,106 @@ def get_student_notification_email():
 
 
 # =========================================================
-# HOME
+# FRONTEND PAGES
 # =========================================================
 
-@app.get("/")
+@app.get(
+    "/",
+    include_in_schema=False
+)
 def home():
+
+    return FileResponse(
+        FRONTEND_DIR / "index.html"
+    )
+
+
+@app.get(
+    "/register",
+    include_in_schema=False
+)
+def register_page():
+
+    return FileResponse(
+        FRONTEND_DIR / "register.html"
+    )
+
+
+@app.get(
+    "/student-dashboard",
+    include_in_schema=False
+)
+def student_dashboard(
+    current_user=Depends(
+        require_roles("student")
+    )
+):
+
+    return FileResponse(
+        FRONTEND_DIR / "student.html"
+    )
+
+
+@app.get(
+    "/faculty-dashboard",
+    include_in_schema=False
+)
+def faculty_dashboard(
+    current_user=Depends(
+        require_roles("faculty")
+    )
+):
+
+    return FileResponse(
+        FRONTEND_DIR / "faculty.html"
+    )
+
+
+@app.get(
+    "/admin-dashboard",
+    include_in_schema=False
+)
+def admin_dashboard(
+    current_user=Depends(
+        require_roles("admin")
+    )
+):
+
+    return FileResponse(
+        FRONTEND_DIR / "admin.html"
+    )
+
+
+@app.get(
+    "/style.css",
+    include_in_schema=False
+)
+def frontend_styles():
+
+    return FileResponse(
+        FRONTEND_DIR / "style.css",
+        media_type="text/css"
+    )
+
+
+@app.get(
+    "/script.js",
+    include_in_schema=False
+)
+def frontend_script():
+
+    return FileResponse(
+        FRONTEND_DIR / "script.js",
+        media_type="application/javascript"
+    )
+
+
+# =========================================================
+# HEALTH CHECK
+# =========================================================
+
+@app.get("/health")
+def health_check():
 
     return {
         "message": "AI Student Help Desk is running",
@@ -142,7 +285,10 @@ def home():
 @app.post("/ask")
 def ask_question(
     request: QuestionRequest,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    current_user=Depends(
+        require_roles("student")
+    )
 ):
 
     global previous_question
@@ -191,6 +337,17 @@ def ask_question(
             "confused",
             "mismatch",
             "not working",
+            "does not work",
+            "doesn't work",
+            "not submitting",
+            "cannot submit",
+            "can't submit",
+            "not opening",
+            "not loading",
+            "not updating",
+            "not uploading",
+            "failed",
+            "stuck",
             "having trouble",
             "facing problem",
             "facing issue"
@@ -221,19 +378,17 @@ def ask_question(
         )
 
 
-        is_exam_problem = (
-            has_problem_word
-            and has_exam_word
-        )
-
-
         # =================================================
-        # EXAM PROBLEM -> CREATE TICKET
+        # STUDENT PROBLEM -> CREATE TICKET
         # =================================================
 
-        if is_exam_problem:
+        if has_problem_word:
 
-            ticket_intent = "exam"
+            ticket_intent = (
+                "exam"
+                if has_exam_word
+                else "general"
+            )
 
             department = route_to_faculty(
                 ticket_intent
@@ -243,7 +398,8 @@ def ask_question(
             ticket = create_ticket(
                 question=question,
                 intent=ticket_intent,
-                department=department
+                department=department,
+                user_id=current_user["id"]
             )
 
 
@@ -261,11 +417,20 @@ def ask_question(
                 ticket_id = str(ticket)
 
 
-            answer = (
-                "Your exam timetable issue has been registered "
-                "successfully. The Examination Department will "
-                "review your ticket."
-            )
+            if has_exam_word:
+
+                answer = (
+                    "Your exam timetable issue has been registered "
+                    "successfully. The Examination Department will "
+                    "review your ticket."
+                )
+
+            else:
+
+                answer = (
+                    "Your issue has been registered automatically. "
+                    "The concerned department will review your ticket."
+                )
 
 
             # =================================================
@@ -277,8 +442,9 @@ def ask_question(
                 save_chat(
                     question=question,
                     answer=answer,
-                    intent="examination",
-                    agent_type="ticket_agent"
+                    intent=ticket_intent,
+                    agent_type="ticket_agent",
+                    user_id=current_user["id"]
                 )
 
             except Exception as history_error:
@@ -293,9 +459,12 @@ def ask_question(
             # EMAIL IN BACKGROUND
             # =================================================
 
-            student_email = (
-                get_student_notification_email()
-            )
+            student_email = str(
+                current_user.get(
+                    "email",
+                    ""
+                )
+            ).strip()
 
 
             email_sent = False
@@ -327,7 +496,7 @@ def ask_question(
                 "status": "ticket_created",
                 "source": "ticket_system",
                 "type": "ticket_agent",
-                "intent": "examination",
+                "intent": ticket_intent,
                 "department": department,
                 "ticket_id": ticket_id,
                 "email_sent": email_sent
@@ -438,6 +607,113 @@ def ask_question(
         )
 
 
+        email_sent = False
+
+
+        should_create_ticket = (
+            not ticket_id
+            and (
+                has_problem_word
+                or status in [
+                    "not_found",
+                    "error"
+                ]
+            )
+        )
+
+
+        if should_create_ticket:
+
+            ticket_intent = str(
+                intent or "general"
+            ).strip().lower()
+
+
+            if ticket_intent in [
+                "",
+                "unknown",
+                "none"
+            ]:
+
+                ticket_intent = "general"
+
+
+            if has_exam_word:
+                ticket_intent = "exam"
+
+
+            department = route_to_faculty(
+                ticket_intent
+            )
+
+
+            automatic_ticket = create_ticket(
+                question=question,
+                intent=ticket_intent,
+                department=department,
+                user_id=current_user["id"]
+            )
+
+
+            if isinstance(
+                automatic_ticket,
+                dict
+            ):
+
+                ticket_id = automatic_ticket.get(
+                    "ticket_id"
+                )
+
+            elif automatic_ticket:
+
+                ticket_id = str(
+                    automatic_ticket
+                )
+
+
+            if ticket_id:
+
+                answer = (
+                    "AI could not find a confirmed answer, so your "
+                    "support ticket has been created automatically. "
+                    "The concerned department will review it."
+                )
+
+                status = "ticket_created"
+                source = "ticket_system"
+                agent_type = "ticket_agent"
+                intent = ticket_intent
+
+
+        if ticket_id:
+
+            assign_ticket_to_user(
+                ticket_id,
+                current_user["id"]
+            )
+
+
+            student_email = str(
+                current_user.get(
+                    "email",
+                    ""
+                )
+            ).strip()
+
+
+            if student_email:
+
+                background_tasks.add_task(
+                    send_ticket_created_email,
+                    to_email=student_email,
+                    ticket_id=ticket_id,
+                    question=question,
+                    department=department
+                )
+
+                email_sent = True
+
+
         if status == "found":
 
             confidence = 0.9
@@ -461,7 +737,8 @@ def ask_question(
                 question=question,
                 answer=answer,
                 intent=intent,
-                agent_type=agent_type
+                agent_type=agent_type,
+                user_id=current_user["id"]
             )
 
         except Exception as history_error:
@@ -484,7 +761,8 @@ def ask_question(
             "type": agent_type,
             "intent": intent,
             "department": department,
-            "ticket_id": ticket_id
+            "ticket_id": ticket_id,
+            "email_sent": email_sent
         }
 
 
@@ -514,11 +792,32 @@ def ask_question(
 
 @app.get("/history")
 @app.get("/chat-history")
-def chat_history():
+def chat_history(
+    current_user=Depends(
+        get_current_user
+    )
+):
 
     try:
 
-        history = get_chat_history()
+        current_role = str(
+            current_user.get(
+                "role",
+                ""
+            )
+        ).strip().lower()
+
+
+        history_user_id = (
+            current_user["id"]
+            if current_role == "student"
+            else None
+        )
+
+
+        history = get_chat_history(
+            user_id=history_user_id
+        )
 
         return {
             "status": "success",
@@ -728,7 +1027,10 @@ def get_single_user(
 @app.post("/create-ticket")
 def manual_create_ticket(
     request: TicketRequest,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    current_user=Depends(
+        require_roles("student")
+    )
 ):
 
     try:
@@ -758,7 +1060,8 @@ def manual_create_ticket(
         ticket = create_ticket(
             question=question,
             intent=intent,
-            department=department
+            department=department,
+            user_id=current_user["id"]
         )
 
 
@@ -776,9 +1079,12 @@ def manual_create_ticket(
             ticket_id = str(ticket)
 
 
-        student_email = (
-            get_student_notification_email()
-        )
+        student_email = str(
+            current_user.get(
+                "email",
+                ""
+            )
+        ).strip()
 
 
         email_sent = False
@@ -826,11 +1132,32 @@ def manual_create_ticket(
 # =========================================================
 
 @app.get("/tickets")
-def get_all_tickets():
+def get_all_tickets(
+    current_user=Depends(
+        get_current_user
+    )
+):
 
     try:
 
-        tickets = get_tickets()
+        current_role = str(
+            current_user.get(
+                "role",
+                ""
+            )
+        ).strip().lower()
+
+
+        ticket_user_id = (
+            current_user["id"]
+            if current_role == "student"
+            else None
+        )
+
+
+        tickets = get_tickets(
+            user_id=ticket_user_id
+        )
 
         return {
             "status": "success",
@@ -857,7 +1184,10 @@ def get_all_tickets():
 
 @app.get("/tickets/{ticket_id}")
 def get_single_ticket(
-    ticket_id: str
+    ticket_id: str,
+    current_user=Depends(
+        get_current_user
+    )
 ):
 
     try:
@@ -875,10 +1205,35 @@ def get_single_ticket(
             }
 
 
+        current_role = str(
+            current_user.get(
+                "role",
+                ""
+            )
+        ).strip().lower()
+
+
+        if (
+            current_role == "student"
+            and str(ticket.get("user_id"))
+            != str(current_user["id"])
+        ):
+
+            raise HTTPException(
+                status_code=403,
+                detail="You can only view your own tickets."
+            )
+
+
         return {
             "status": "success",
             "ticket": ticket
         }
+
+
+    except HTTPException:
+
+        raise
 
 
     except Exception as e:
@@ -902,8 +1257,30 @@ def get_single_ticket(
 def update_ticket(
     ticket_id: str,
     request: TicketStatusRequest,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    current_user=Depends(
+        get_current_user
+    )
 ):
+
+    current_role = str(
+        current_user.get(
+            "role",
+            ""
+        )
+    ).strip().lower()
+
+
+    if current_role not in [
+        "faculty",
+        "admin"
+    ]:
+
+        raise HTTPException(
+            status_code=403,
+            detail="Only faculty or admin can update ticket status."
+        )
+
 
     try:
 
@@ -946,9 +1323,19 @@ def update_ticket(
             }
 
 
-        student_email = (
-            get_student_notification_email()
+        updated_ticket = get_ticket(
+            ticket_id
         )
+
+
+        student_email = str(
+            (
+                updated_ticket or {}
+            ).get(
+                "student_email",
+                ""
+            )
+        ).strip()
 
 
         email_sent = False
@@ -1229,4 +1616,250 @@ def clear_memory():
 
     return {
         "message": "Conversation memory cleared."
+    }
+
+
+# =========================================================
+# AUTH HELPERS
+# =========================================================
+
+def get_dashboard_path(role):
+
+    dashboard_paths = {
+        "student": "/student-dashboard",
+        "faculty": "/faculty-dashboard",
+        "admin": "/admin-dashboard"
+    }
+
+    return dashboard_paths.get(
+        str(role).lower(),
+        "/"
+    )
+
+
+# =========================================================
+# REGISTER
+# =========================================================
+
+@app.post(
+    "/auth/register",
+    status_code=status.HTTP_201_CREATED
+)
+def register_user(
+    request: RegisterRequest
+):
+
+    name = request.name.strip()
+    email = request.email.strip().lower()
+    password = request.password
+    role = request.role.strip().lower()
+    access_code = request.access_code.strip()
+
+    if len(name) < 2:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Please enter your full name."
+        )
+
+    if not re.fullmatch(
+        r"[^\s@]+@[^\s@]+\.[^\s@]+",
+        email
+    ):
+
+        raise HTTPException(
+            status_code=400,
+            detail="Please enter a valid email address."
+        )
+
+    if len(password) < 8:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Password must contain at least 8 characters."
+        )
+
+    if role not in [
+        "student",
+        "faculty",
+        "admin"
+    ]:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid account role."
+        )
+
+    if role == "faculty":
+
+        faculty_code = os.getenv(
+            "FACULTY_REGISTRATION_CODE",
+            "FACULTY2026"
+        )
+
+        if not hmac.compare_digest(
+            access_code,
+            faculty_code
+        ):
+
+            raise HTTPException(
+                status_code=403,
+                detail="Invalid faculty access code."
+            )
+
+    if role == "admin":
+
+        admin_code = os.getenv(
+            "ADMIN_REGISTRATION_CODE",
+            "ADMIN2026"
+        )
+
+        if not hmac.compare_digest(
+            access_code,
+            admin_code
+        ):
+
+            raise HTTPException(
+                status_code=403,
+                detail="Invalid admin access code."
+            )
+
+    existing_user = get_user_by_email(
+        email
+    )
+
+    if existing_user:
+
+        raise HTTPException(
+            status_code=409,
+            detail="An account with this email already exists."
+        )
+
+    password_hash = hash_password(
+        password
+    )
+
+    user_id = save_user(
+        name=name,
+        email=email,
+        role=role,
+        password_hash=password_hash
+    )
+
+    return {
+        "status": "success",
+        "message": "Account created successfully. Please login.",
+        "user": {
+            "id": user_id,
+            "name": name,
+            "email": email,
+            "role": role
+        }
+    }
+
+
+# =========================================================
+# LOGIN
+# =========================================================
+
+@app.post("/auth/login")
+def login_user(
+    request: LoginRequest,
+    response: Response
+):
+
+    email = request.email.strip().lower()
+
+    user = get_login_user_by_email(
+        email
+    )
+
+    if (
+        not user
+        or not verify_password(
+            request.password,
+            user.get("password_hash")
+        )
+    ):
+
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect email or password."
+        )
+
+    session_token = create_login_session(
+        user["id"]
+    )
+
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=session_token,
+        max_age=SESSION_HOURS * 60 * 60,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        path="/"
+    )
+
+    return {
+        "status": "success",
+        "message": "Login successful.",
+        "user": {
+            "id": user["id"],
+            "name": user["name"],
+            "email": user["email"],
+            "role": user["role"]
+        },
+        "dashboard": get_dashboard_path(
+            user["role"]
+        )
+    }
+
+
+# =========================================================
+# LOGOUT
+# =========================================================
+
+@app.post("/auth/logout")
+def logout_user(
+    request: Request,
+    response: Response
+):
+
+    session_token = request.cookies.get(
+        COOKIE_NAME
+    )
+
+    logout_session(
+        session_token
+    )
+
+    response.delete_cookie(
+        COOKIE_NAME,
+        path="/"
+    )
+
+    return {
+        "status": "success",
+        "message": "Logout successful."
+    }
+
+
+# =========================================================
+# CURRENT USER
+# =========================================================
+
+@app.get("/auth/me")
+def current_logged_in_user(
+    current_user=Depends(
+        get_current_user
+    )
+):
+
+    return {
+        "status": "success",
+        "user": current_user,
+        "dashboard": get_dashboard_path(
+            current_user["role"]
+        )
     }

@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | AI Student Help Desk</title>
+
+    <style>
+        :root{
+            --primary:#2563eb;
+            --primary-dark:#1d4ed8;
+            --teal:#14b8a6;
+            --navy:#0b1f3a;
+            --gold:#f59e0b;
+            --text:#17233c;
+            --muted:#64748b;
+            --line:#dfe7f1;
+            --mouse-x:50%;
+            --mouse-y:50%;
+        }
+
+        *{
+            box-sizing:border-box;
+        }
+
+        html{
+            min-height:100%;
+        }
+
+        body{
+            margin:0;
+            min-height:100vh;
+            padding:28px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            overflow-x:hidden;
+            font-family:"Segoe UI",Arial,sans-serif;
+            color:var(--text);
+            background:
+                radial-gradient(circle at var(--mouse-x) var(--mouse-y),rgba(56,189,248,.12),transparent 24%),
+                linear-gradient(135deg,#061426,#0b1f3a 50%,#0a3152);
+        }
+
+        .background{
+            position:fixed;
+            inset:0;
+            overflow:hidden;
+            pointer-events:none;
+        }
+
+        .grid{
+            position:absolute;
+            inset:0;
+            opacity:.16;
+            background-image:
+                linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),
+                linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);
+            background-size:55px 55px;
+        }
+
+        .orb{
+            position:absolute;
+            border-radius:50%;
+            filter:blur(10px);
+            opacity:.48;
+        }
+
+        .orb-one{
+            width:350px;
+            height:350px;
+            top:-130px;
+            left:-100px;
+            background:rgba(20,184,166,.44);
+            animation:driftOne 10s ease-in-out infinite alternate;
+        }
+
+        .orb-two{
+            width:420px;
+            height:420px;
+            right:-170px;
+            bottom:-180px;
+            background:rgba(37,99,235,.43);
+            animation:driftTwo 12s ease-in-out infinite alternate;
+        }
+
+        .orb-three{
+            width:190px;
+            height:190px;
+            top:20%;
+            right:12%;
+            background:rgba(245,158,11,.18);
+            animation:driftThree 8s ease-in-out infinite alternate;
+        }
+
+        .register-card{
+            position:relative;
+            z-index:2;
+            width:min(1120px,100%);
+            min-height:720px;
+            display:grid;
+            grid-template-columns:.88fr 1.12fr;
+            overflow:hidden;
+            border:1px solid rgba(255,255,255,.24);
+            border-radius:30px;
+            background:white;
+            box-shadow:0 40px 100px rgba(0,0,0,.42);
+            animation:cardIn .85s cubic-bezier(.16,1,.3,1) both;
+        }
+
+        .register-card::before{
+            content:"";
+            position:absolute;
+            z-index:5;
+            top:0;
+            left:0;
+            right:0;
+            height:4px;
+            background:linear-gradient(90deg,var(--teal),#38bdf8,var(--primary),var(--gold),var(--teal));
+            background-size:220% 100%;
+            animation:rainbow 5s linear infinite;
+        }
+
+        .brand-panel{
+            position:relative;
+            overflow:hidden;
+            padding:50px 48px;
+            color:white;
+            background:
+                radial-gradient(circle at 84% 15%,rgba(56,189,248,.21),transparent 25%),
+                linear-gradient(145deg,#091b35,#173f70 55%,#0f625f);
+        }
+
+        .brand-panel::before{
+            content:"";
+            position:absolute;
+            inset:0;
+            opacity:.14;
+            background-image:
+                linear-gradient(rgba(255,255,255,.15) 1px,transparent 1px),
+                linear-gradient(90deg,rgba(255,255,255,.15) 1px,transparent 1px);
+            background-size:35px 35px;
+        }
+
+        .brand-content{
+            position:relative;
+            z-index:2;
+            height:100%;
+            display:flex;
+            flex-direction:column;
+        }
+
+        .university{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            margin-bottom:35px;
+            color:#d5f5f1;
+            font-size:11px;
+            font-weight:850;
+            letter-spacing:2px;
+            animation:down .65s .1s both;
+        }
+
+        .university::before{
+            content:"";
+            width:25px;
+            height:2px;
+            background:var(--teal);
+            box-shadow:0 0 12px var(--teal);
+        }
+
+        .ai-logo{
+            position:relative;
+            width:76px;
+            height:76px;
+            display:grid;
+            place-items:center;
+            border-radius:23px;
+            color:var(--navy);
+            background:linear-gradient(135deg,#f0fdfa,#7dd3fc);
+            box-shadow:0 18px 38px rgba(0,0,0,.24),0 0 32px rgba(56,189,248,.25);
+            font-size:24px;
+            font-weight:900;
+            animation:logoFloat 3.5s ease-in-out infinite;
+        }
+
+        .ai-logo::after{
+            content:"";
+            position:absolute;
+            inset:-9px;
+            border:1px solid rgba(125,211,252,.45);
+            border-radius:29px;
+            animation:pulse 2.4s ease-out infinite;
+        }
+
+        .brand-panel h1{
+            margin:27px 0 15px;
+            font-size:43px;
+            line-height:1.05;
+            letter-spacing:-1.8px;
+            animation:up .7s .2s both;
+        }
+
+        .gradient-text{
+            display:block;
+            color:transparent;
+            background:linear-gradient(90deg,#bae6fd,#99f6e4,#fde68a,#bae6fd);
+            background-size:200% auto;
+            background-clip:text;
+            -webkit-background-clip:text;
+            animation:textShine 4s linear infinite;
+        }
+
+        .brand-copy{
+            margin:0 0 28px;
+            color:#dbeafe;
+            font-size:15px;
+            line-height:1.75;
+            animation:up .7s .3s both;
+        }
+
+        .benefits{
+            display:grid;
+            gap:11px;
+        }
+
+        .benefit{
+            display:flex;
+            align-items:center;
+            gap:11px;
+            padding:11px 12px;
+            border:1px solid rgba(255,255,255,.14);
+            border-radius:13px;
+            background:rgba(255,255,255,.08);
+            backdrop-filter:blur(8px);
+            font-size:13px;
+            font-weight:650;
+            opacity:0;
+            animation:benefitIn .55s forwards;
+        }
+
+        .benefit:nth-child(1){animation-delay:.48s;}
+        .benefit:nth-child(2){animation-delay:.62s;}
+        .benefit:nth-child(3){animation-delay:.76s;}
+
+        .benefit-icon{
+            width:29px;
+            height:29px;
+            flex:0 0 29px;
+            display:grid;
+            place-items:center;
+            border-radius:9px;
+            color:var(--navy);
+            background:linear-gradient(135deg,#e0f2fe,#5eead4);
+            font-size:10px;
+            font-weight:900;
+        }
+
+        .brand-security{
+            margin-top:auto;
+            padding-top:25px;
+            display:flex;
+            align-items:center;
+            gap:9px;
+            color:#bfdbfe;
+            font-size:10px;
+            font-weight:750;
+            letter-spacing:.6px;
+        }
+
+        .security-dot{
+            width:8px;
+            height:8px;
+            border-radius:50%;
+            background:#34d399;
+            box-shadow:0 0 0 5px rgba(52,211,153,.12),0 0 12px #34d399;
+            animation:statusPulse 2s ease-in-out infinite;
+        }
+
+        .form-panel{
+            position:relative;
+            padding:43px 54px;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            background:radial-gradient(circle at 95% 5%,rgba(37,99,235,.07),transparent 28%),white;
+        }
+
+        .form-content{
+            width:100%;
+            max-width:515px;
+            margin:auto;
+            animation:formIn .75s .25s both;
+        }
+
+        .form-top{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:15px;
+            margin-bottom:12px;
+        }
+
+        .eyebrow{
+            display:flex;
+            align-items:center;
+            gap:8px;
+            margin:0;
+            color:var(--primary);
+            font-size:11px;
+            font-weight:900;
+            letter-spacing:1.5px;
+        }
+
+        .eyebrow::before{
+            content:"";
+            width:8px;
+            height:8px;
+            border-radius:50%;
+            background:var(--teal);
+            box-shadow:0 0 0 5px rgba(20,184,166,.12);
+        }
+
+        .back-link{
+            padding:7px 10px;
+            border:1px solid #e2e8f0;
+            border-radius:9px;
+            color:#475569;
+            background:#f8fafc;
+            text-decoration:none;
+            font-size:11px;
+            font-weight:750;
+            transition:.2s;
+        }
+
+        .back-link:hover{
+            color:var(--primary);
+            border-color:#bfdbfe;
+            transform:translateX(-2px);
+        }
+
+        .form-panel h2{
+            margin:0;
+            color:#0b1f3a;
+            font-size:32px;
+            letter-spacing:-.8px;
+        }
+
+        .form-description{
+            margin:8px 0 17px;
+            color:var(--muted);
+            font-size:13px;
+            line-height:1.55;
+        }
+
+        .field-row{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:14px;
+        }
+
+        .field{
+            margin-top:12px;
+        }
+
+        label{
+            display:block;
+            margin-bottom:7px;
+            color:#334155;
+            font-size:12px;
+            font-weight:750;
+        }
+
+        .input-wrap{
+            position:relative;
+        }
+
+        input,
+        select{
+            width:100%;
+            height:46px;
+            padding:0 13px;
+            border:1px solid var(--line);
+            border-radius:12px;
+            outline:none;
+            color:#17233c;
+            background:#f8fafc;
+            font-size:13px;
+            transition:border-color .22s,box-shadow .22s,transform .22s,background .22s;
+        }
+
+        input.has-toggle{
+            padding-right:58px;
+        }
+
+        input:focus,
+        select:focus{
+            border-color:var(--primary);
+            background:white;
+            box-shadow:0 0 0 4px rgba(37,99,235,.09),0 8px 20px rgba(37,99,235,.06);
+            transform:translateY(-1px);
+        }
+
+        .password-toggle{
+            position:absolute;
+            top:50%;
+            right:7px;
+            width:45px;
+            height:32px;
+            transform:translateY(-50%);
+            border:0;
+            border-radius:8px;
+            color:#64748b;
+            background:transparent;
+            cursor:pointer;
+            font-size:9px;
+            font-weight:900;
+            letter-spacing:.5px;
+        }
+
+        .password-toggle:hover{
+            color:var(--primary);
+            background:#eff6ff;
+        }
+
+        .role-help{
+            margin-top:6px;
+            color:#94a3b8;
+            font-size:10px;
+            line-height:1.45;
+        }
+
+        .access-field{
+            max-height:0;
+            overflow:hidden;
+            opacity:0;
+            margin-top:0;
+            transition:max-height .35s ease,opacity .3s ease,margin-top .35s ease;
+        }
+
+        .access-field.visible{
+            max-height:95px;
+            opacity:1;
+            margin-top:12px;
+        }
+
+        .strength{
+            margin-top:8px;
+        }
+
+        .strength-track{
+            height:4px;
+            overflow:hidden;
+            border-radius:99px;
+            background:#e2e8f0;
+        }
+
+        .strength-bar{
+            width:0;
+            height:100%;
+            border-radius:99px;
+            background:#ef4444;
+            transition:width .3s ease,background .3s ease;
+        }
+
+        .strength-text{
+            display:flex;
+            justify-content:space-between;
+            margin-top:5px;
+            color:#94a3b8;
+            font-size:9px;
+            font-weight:700;
+        }
+
+        .message{
+            min-height:18px;
+            margin-top:11px;
+            font-size:12px;
+            font-weight:700;
+        }
+
+        .message.error{
+            color:#dc2626;
+            animation:shake .35s ease;
+        }
+
+        .message.success{
+            color:#047857;
+        }
+
+        .register-button{
+            position:relative;
+            width:100%;
+            height:49px;
+            margin-top:7px;
+            overflow:hidden;
+            border:0;
+            border-radius:13px;
+            color:white;
+            cursor:pointer;
+            background:linear-gradient(100deg,#1d4ed8,#2563eb,#0f766e);
+            background-size:200% 100%;
+            box-shadow:0 13px 26px rgba(37,99,235,.24);
+            font-size:14px;
+            font-weight:850;
+            transition:.22s;
+            animation:buttonGradient 5s linear infinite;
+        }
+
+        .register-button::before{
+            content:"";
+            position:absolute;
+            top:-60%;
+            left:-65%;
+            width:38%;
+            height:220%;
+            transform:rotate(25deg);
+            background:rgba(255,255,255,.3);
+            transition:left .55s;
+        }
+
+        .register-button:hover::before{
+            left:135%;
+        }
+
+        .register-button:hover{
+            transform:translateY(-2px);
+            box-shadow:0 17px 32px rgba(37,99,235,.31);
+        }
+
+        .register-button:disabled{
+            opacity:.7;
+            cursor:wait;
+            transform:none;
+        }
+
+        .button-content{
+            position:relative;
+            z-index:2;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:9px;
+        }
+
+        .spinner{
+            width:17px;
+            height:17px;
+            display:none;
+            border:2px solid rgba(255,255,255,.4);
+            border-top-color:white;
+            border-radius:50%;
+            animation:spin .75s linear infinite;
+        }
+
+        .register-button.loading .spinner{
+            display:block;
+        }
+
+        .login-link{
+            margin:16px 0 0;
+            color:var(--muted);
+            text-align:center;
+            font-size:12px;
+        }
+
+        .login-link a{
+            color:var(--primary);
+            font-weight:850;
+            text-decoration:none;
+        }
+
+        .login-link a:hover{
+            text-decoration:underline;
+        }
+
+        @keyframes cardIn{from{opacity:0;transform:translateY(28px) scale(.97);}}
+        @keyframes formIn{from{opacity:0;transform:translateX(25px);}}
+        @keyframes up{from{opacity:0;transform:translateY(20px);}}
+        @keyframes down{from{opacity:0;transform:translateY(-16px);}}
+        @keyframes benefitIn{from{opacity:0;transform:translateX(-20px);}to{opacity:1;transform:none;}}
+        @keyframes logoFloat{50%{transform:translateY(-8px) rotate(2deg);}}
+        @keyframes pulse{from{opacity:.65;transform:scale(.92);}to{opacity:0;transform:scale(1.25);}}
+        @keyframes textShine{to{background-position:200% center;}}
+        @keyframes rainbow{to{background-position:220% 0;}}
+        @keyframes buttonGradient{to{background-position:200% 0;}}
+        @keyframes statusPulse{50%{opacity:.6;transform:scale(.82);}}
+        @keyframes driftOne{to{transform:translate(90px,65px) scale(1.1);}}
+        @keyframes driftTwo{to{transform:translate(-90px,-55px) scale(.9);}}
+        @keyframes driftThree{to{transform:translate(-65px,55px);}}
+        @keyframes spin{to{transform:rotate(360deg);}}
+        @keyframes shake{25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+
+        @media(max-width:900px){
+            body{
+                padding:18px;
+                overflow-y:auto;
+            }
+
+            .register-card{
+                grid-template-columns:1fr;
+            }
+
+            .brand-panel{
+                min-height:410px;
+                padding:38px 35px;
+            }
+
+            .brand-panel h1{
+                font-size:39px;
+            }
+
+            .benefits{
+                grid-template-columns:1fr 1fr;
+            }
+
+            .benefit:last-child{
+                grid-column:1 / -1;
+            }
+
+            .brand-security{
+                margin-top:24px;
+            }
+
+            .form-panel{
+                padding:42px 32px;
+            }
+        }
+
+        @media(max-width:560px){
+            body{
+                padding:10px;
+            }
+
+            .register-card{
+                border-radius:22px;
+            }
+
+            .brand-panel{
+                min-height:auto;
+                padding:30px 23px 34px;
+            }
+
+            .university{
+                margin-bottom:24px;
+                font-size:9px;
+            }
+
+            .ai-logo{
+                width:64px;
+                height:64px;
+                border-radius:19px;
+                font-size:21px;
+            }
+
+            .brand-panel h1{
+                margin-top:22px;
+                font-size:34px;
+            }
+
+            .benefits{
+                grid-template-columns:1fr;
+            }
+
+            .benefit:last-child{
+                grid-column:auto;
+            }
+
+            .form-panel{
+                padding:34px 22px;
+            }
+
+            .form-panel h2{
+                font-size:28px;
+            }
+
+            .field-row{
+                grid-template-columns:1fr;
+                gap:0;
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce){
+            *,*::before,*::after{
+                animation-duration:.01ms !important;
+                animation-iteration-count:1 !important;
+                scroll-behavior:auto !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background" aria-hidden="true">
+        <div class="grid"></div>
+        <div class="orb orb-one"></div>
+        <div class="orb orb-two"></div>
+        <div class="orb orb-three"></div>
+    </div>
+
+    <main class="register-card">
+        <section class="brand-panel">
+            <div class="brand-content">
+                <div class="university">SILVER OAK UNIVERSITY</div>
+                <div class="ai-logo">AI</div>
+
+                <h1>
+                    Join the smart
+                    <span class="gradient-text">campus portal.</span>
+                </h1>
+
+                <p class="brand-copy">
+                    Create one secure profile for intelligent academic assistance,
+                    university updates and transparent support tracking.
+                </p>
+
+                <div class="benefits">
+                    <div class="benefit"><span class="benefit-icon">AI</span>Verified academic assistance</div>
+                    <div class="benefit"><span class="benefit-icon">ID</span>Role-based secure dashboard</div>
+                    <div class="benefit"><span class="benefit-icon">24</span>Accessible campus support</div>
+                </div>
+
+                <div class="brand-security">
+                    <span class="security-dot"></span>
+                    SECURE REGISTRATION SERVICE ONLINE
+                </div>
+            </div>
+        </section>
+
+        <section class="form-panel">
+            <div class="form-content">
+                <div class="form-top">
+                    <p class="eyebrow">CREATE YOUR PROFILE</p>
+                    <a class="back-link" href="/">← Back to login</a>
+                </div>
+
+                <h2>Register your account</h2>
+                <p class="form-description">Enter accurate information to receive the correct university portal access.</p>
+
+                <form id="registerForm">
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="name">Full name</label>
+                            <input id="name" type="text" placeholder="Your full name" autocomplete="name" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="email">Email address</label>
+                            <input id="email" type="email" placeholder="name@example.com" autocomplete="email" required>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="role">Account role</label>
+                        <select id="role" required>
+                            <option value="student">Student</option>
+                            <option value="faculty">Faculty</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                        <p id="roleHelp" class="role-help">Student accounts can be created directly.</p>
+                    </div>
+
+                    <div id="accessField" class="access-field">
+                        <label for="accessCode">Authorized access code</label>
+                        <input id="accessCode" type="password" placeholder="Enter the provided access code" autocomplete="off">
+                    </div>
+
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="password">Password</label>
+                            <div class="input-wrap">
+                                <input id="password" class="has-toggle" type="password" placeholder="Minimum 8 characters" autocomplete="new-password" minlength="8" required>
+                                <button class="password-toggle" type="button" data-target="password">SHOW</button>
+                            </div>
+
+                            <div class="strength">
+                                <div class="strength-track"><div id="strengthBar" class="strength-bar"></div></div>
+                                <div class="strength-text"><span>Password strength</span><span id="strengthLabel">Enter password</span></div>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label for="confirmPassword">Confirm password</label>
+                            <div class="input-wrap">
+                                <input id="confirmPassword" class="has-toggle" type="password" placeholder="Enter password again" autocomplete="new-password" minlength="8" required>
+                                <button class="password-toggle" type="button" data-target="confirmPassword">SHOW</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="message" class="message" role="status"></div>
+
+                    <button id="registerButton" class="register-button" type="submit">
+                        <span class="button-content">
+                            <span class="spinner"></span>
+                            <span id="buttonText">Create Secure Account</span>
+                            <span>→</span>
+                        </span>
+                    </button>
+                </form>
+
+                <p class="login-link">Already registered? <a href="/">Sign in to your portal</a></p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const registerForm = document.getElementById("registerForm");
+        const registerButton = document.getElementById("registerButton");
+        const buttonText = document.getElementById("buttonText");
+        const message = document.getElementById("message");
+        const roleInput = document.getElementById("role");
+        const roleHelp = document.getElementById("roleHelp");
+        const accessField = document.getElementById("accessField");
+        const accessCodeInput = document.getElementById("accessCode");
+        const passwordInput = document.getElementById("password");
+        const confirmPasswordInput = document.getElementById("confirmPassword");
+        const strengthBar = document.getElementById("strengthBar");
+        const strengthLabel = document.getElementById("strengthLabel");
+
+        document.addEventListener("pointermove", function(event){
+            document.documentElement.style.setProperty("--mouse-x",event.clientX + "px");
+            document.documentElement.style.setProperty("--mouse-y",event.clientY + "px");
+        });
+
+        document.querySelectorAll(".password-toggle").forEach(function(button){
+            button.addEventListener("click",function(){
+                const input = document.getElementById(button.dataset.target);
+                const hidden = input.type === "password";
+                input.type = hidden ? "text" : "password";
+                button.innerText = hidden ? "HIDE" : "SHOW";
+            });
+        });
+
+        fetch("/auth/me",{credentials:"include"})
+            .then(async function(response){
+                if(response.ok){
+                    const data = await response.json();
+                    window.location.replace(data.dashboard);
+                }
+            })
+            .catch(function(){
+                console.log("Registration page ready.");
+            });
+
+        roleInput.addEventListener("change",function(){
+            const protectedRole = roleInput.value !== "student";
+
+            accessField.classList.toggle("visible",protectedRole);
+            accessCodeInput.required = protectedRole;
+
+            if(protectedRole){
+                roleHelp.innerText = "Faculty and Admin registration requires an authorized access code.";
+            }
+            else{
+                roleHelp.innerText = "Student accounts can be created directly.";
+                accessCodeInput.value = "";
+            }
+        });
+
+        passwordInput.addEventListener("input",function(){
+            const value = passwordInput.value;
+            let score = 0;
+
+            if(value.length >= 8) score++;
+            if(/[a-z]/.test(value) && /[A-Z]/.test(value)) score++;
+            if(/\d/.test(value)) score++;
+            if(/[^A-Za-z0-9]/.test(value)) score++;
+
+            const widths = ["0%","25%","50%","75%","100%"];
+            const labels = ["Enter password","Weak","Fair","Good","Strong"];
+            const colors = ["#e2e8f0","#ef4444","#f59e0b","#2563eb","#14b8a6"];
+
+            strengthBar.style.width = widths[score];
+            strengthBar.style.background = colors[score];
+            strengthLabel.innerText = labels[score];
+            strengthLabel.style.color = colors[score];
+        });
+
+        registerForm.addEventListener("submit",async function(event){
+            event.preventDefault();
+
+            message.className = "message";
+            message.innerText = "";
+
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            const role = roleInput.value;
+            const accessCode = accessCodeInput.value.trim();
+
+            if(password !== confirmPassword){
+                message.className = "message error";
+                message.innerText = "Passwords do not match.";
+                return;
+            }
+
+            if(password.length < 8){
+                message.className = "message error";
+                message.innerText = "Password must contain at least 8 characters.";
+                return;
+            }
+
+            registerButton.disabled = true;
+            registerButton.classList.add("loading");
+            buttonText.innerText = "Creating account...";
+
+            try{
+                const response = await fetch("/auth/register",{
+                    method:"POST",
+                    credentials:"include",
+                    headers:{"Content-Type":"application/json"},
+                    body:JSON.stringify({
+                        name:name,
+                        email:email,
+                        password:password,
+                        role:role,
+                        access_code:accessCode
+                    })
+                });
+
+                const data = await response.json();
+
+                if(!response.ok){
+                    let errorMessage = data.detail || "Registration failed.";
+
+                    if(Array.isArray(errorMessage)){
+                        errorMessage = errorMessage[0]?.msg || "Please verify your information.";
+                    }
+
+                    throw new Error(errorMessage);
+                }
+
+                message.className = "message success";
+                message.innerText = data.message || "Account created successfully. Redirecting to login...";
+                buttonText.innerText = "Account Created";
+
+                setTimeout(function(){
+                    window.location.replace("/");
+                },1200);
+
+            }
+            catch(error){
+                message.className = "message error";
+                message.innerText = error.message;
+                registerButton.disabled = false;
+                registerButton.classList.remove("loading");
+                buttonText.innerText = "Create Secure Account";
+            }
+        });
+    </script>
+</body>
+</html>

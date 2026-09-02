@@ -1,12 +1,11 @@
-import uuid
-
 from app.database.database import save_ticket
 
 
 def create_ticket(
     question: str,
     intent: str = "general",
-    department: str = "Student Services"
+    department: str = "Student Services",
+    user_id=None
 ):
 
     question = question.strip()
@@ -14,7 +13,8 @@ def create_ticket(
     ticket_id = save_ticket(
         question=question,
         intent=intent,
-        department=department
+        department=department,
+        user_id=user_id
     )
 
     return {

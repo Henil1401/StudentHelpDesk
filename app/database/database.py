@@ -9,7 +9,6 @@ import uuid
 # =========================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
 DATABASE_PATH = BASE_DIR / "student_helpdesk.db"
 
 
@@ -18,14 +17,38 @@ DATABASE_PATH = BASE_DIR / "student_helpdesk.db"
 # =========================================================
 
 def get_connection():
-
-    connection = sqlite3.connect(
-        str(DATABASE_PATH)
-    )
-
+    connection = sqlite3.connect(str(DATABASE_PATH))
     connection.row_factory = sqlite3.Row
-
+    connection.execute("PRAGMA foreign_keys = ON")
     return connection
+
+
+# =========================================================
+# DATABASE HELPERS
+# =========================================================
+
+def row_to_dict(row):
+    if row is None:
+        return None
+    return dict(row)
+
+
+def rows_to_dict(rows):
+    return [dict(row) for row in rows]
+
+
+def add_column_if_missing(cursor, table_name, column_name, column_definition):
+    columns = [
+        row["name"]
+        for row in cursor.execute(
+            f"PRAGMA table_info({table_name})"
+        ).fetchall()
+    ]
+
+    if column_name not in columns:
+        cursor.execute(
+            f"ALTER TABLE {table_name} ADD COLUMN {column_definition}"
+        )
 
 
 # =========================================================
@@ -33,139 +56,107 @@ def get_connection():
 # =========================================================
 
 def create_tables():
-
     connection = get_connection()
-
     cursor = connection.cursor()
 
-    # -----------------------------------------------------
-    # USERS
-    # -----------------------------------------------------
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            name TEXT NOT NULL,
-
-            email TEXT UNIQUE NOT NULL,
-
-            role TEXT DEFAULT 'student',
-
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-
+    try:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT,
+                role TEXT DEFAULT 'student',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
         )
-        """
-    )
 
-    # -----------------------------------------------------
-    # TICKETS
-    # -----------------------------------------------------
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS tickets (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            ticket_id TEXT UNIQUE NOT NULL,
-
-            question TEXT NOT NULL,
-
-            intent TEXT DEFAULT 'general',
-
-            department TEXT DEFAULT '-',
-
-            status TEXT DEFAULT 'open',
-
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                token_hash TEXT UNIQUE NOT NULL,
+                user_id INTEGER NOT NULL,
+                expires_at TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
         )
-        """
-    )
 
-    # -----------------------------------------------------
-    # CHATS
-    # -----------------------------------------------------
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS chats (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            question TEXT NOT NULL,
-
-            answer TEXT NOT NULL,
-
-            intent TEXT DEFAULT 'general',
-
-            agent_type TEXT DEFAULT 'general',
-
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tickets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticket_id TEXT UNIQUE NOT NULL,
+                user_id INTEGER,
+                question TEXT NOT NULL,
+                intent TEXT DEFAULT 'general',
+                department TEXT DEFAULT '-',
+                status TEXT DEFAULT 'open',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            )
+            """
         )
-        """
-    )
 
-    # -----------------------------------------------------
-    # FACULTY
-    # -----------------------------------------------------
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS faculty (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            category TEXT NOT NULL,
-
-            title TEXT NOT NULL,
-
-            content TEXT NOT NULL,
-
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS chats (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                question TEXT NOT NULL,
+                answer TEXT NOT NULL,
+                intent TEXT DEFAULT 'general',
+                agent_type TEXT DEFAULT 'general',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            )
+            """
         )
-        """
-    )
 
-    connection.commit()
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS faculty (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                category TEXT NOT NULL,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
 
-    connection.close()
+        # Old database ko delete kiye bina new columns add karega.
+        add_column_if_missing(
+            cursor,
+            "users",
+            "password_hash",
+            "password_hash TEXT"
+        )
 
+        add_column_if_missing(
+            cursor,
+            "tickets",
+            "user_id",
+            "user_id INTEGER"
+        )
 
-# =========================================================
-# INITIALIZE DATABASE
-# =========================================================
+        add_column_if_missing(
+            cursor,
+            "chats",
+            "user_id",
+            "user_id INTEGER"
+        )
 
-create_tables()
+        connection.commit()
 
-
-# =========================================================
-# HELPER
-# =========================================================
-
-def row_to_dict(row):
-
-    if row is None:
-        return None
-
-    return dict(row)
-
-
-def rows_to_dict(rows):
-
-    return [
-        dict(row)
-        for row in rows
-    ]
+    finally:
+        connection.close()
 
 
 # =========================================================
@@ -175,28 +166,21 @@ def rows_to_dict(rows):
 def save_user(
     name,
     email,
-    role="student"
+    role="student",
+    password_hash=None
 ):
-
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
+        email = email.strip().lower()
 
         cursor.execute(
-            """
-            SELECT id
-            FROM users
-            WHERE email = ?
-            """,
+            "SELECT id FROM users WHERE lower(email) = lower(?)",
             (email,)
         )
 
-        existing = cursor.fetchone()
-
-        if existing:
-
+        if cursor.fetchone():
             return None
 
         cursor.execute(
@@ -205,43 +189,31 @@ def save_user(
             (
                 name,
                 email,
+                password_hash,
                 role
             )
-            VALUES
-            (
-                ?,
-                ?,
-                ?
-            )
+            VALUES (?, ?, ?, ?)
             """,
             (
                 name,
                 email,
+                password_hash,
                 role
             )
         )
 
         connection.commit()
-
         return cursor.lastrowid
 
     finally:
-
         connection.close()
 
 
-# =========================================================
-# GET USERS
-# =========================================================
-
 def get_users():
-
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
         cursor.execute(
             """
             SELECT
@@ -255,27 +227,17 @@ def get_users():
             """
         )
 
-        rows = cursor.fetchall()
-
-        return rows_to_dict(rows)
+        return rows_to_dict(cursor.fetchall())
 
     finally:
-
         connection.close()
 
 
-# =========================================================
-# GET USER BY EMAIL
-# =========================================================
-
 def get_user_by_email(email):
-
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
         cursor.execute(
             """
             SELECT
@@ -285,32 +247,48 @@ def get_user_by_email(email):
                 role,
                 created_at
             FROM users
-            WHERE email = ?
+            WHERE lower(email) = lower(?)
             """,
-            (email,)
+            (email.strip(),)
         )
 
-        row = cursor.fetchone()
-
-        return row_to_dict(row)
+        return row_to_dict(cursor.fetchone())
 
     finally:
-
         connection.close()
 
 
-# =========================================================
-# GET SINGLE USER
-# =========================================================
-
-def get_user(user_id):
-
+def get_login_user_by_email(email):
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
+        cursor.execute(
+            """
+            SELECT
+                id,
+                name,
+                email,
+                password_hash,
+                role,
+                created_at
+            FROM users
+            WHERE lower(email) = lower(?)
+            """,
+            (email.strip(),)
+        )
 
+        return row_to_dict(cursor.fetchone())
+
+    finally:
+        connection.close()
+
+
+def get_user(user_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
         cursor.execute(
             """
             SELECT
@@ -325,50 +303,153 @@ def get_user(user_id):
             (user_id,)
         )
 
-        row = cursor.fetchone()
-
-        return row_to_dict(row)
+        return row_to_dict(cursor.fetchone())
 
     finally:
+        connection.close()
 
+
+def update_user_password(user_id, password_hash):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            UPDATE users
+            SET password_hash = ?
+            WHERE id = ?
+            """,
+            (password_hash, user_id)
+        )
+
+        connection.commit()
+        return cursor.rowcount > 0
+
+    finally:
         connection.close()
 
 
 # =========================================================
-# SAVE CHAT
+# LOGIN SESSIONS
+# =========================================================
+
+def save_session(token_hash, user_id, expires_at):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            INSERT INTO sessions
+            (
+                token_hash,
+                user_id,
+                expires_at
+            )
+            VALUES (?, ?, ?)
+            """,
+            (token_hash, user_id, expires_at)
+        )
+
+        connection.commit()
+        return cursor.lastrowid
+
+    finally:
+        connection.close()
+
+
+def get_user_by_session(token_hash, current_time):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                users.id,
+                users.name,
+                users.email,
+                users.role,
+                users.created_at
+            FROM sessions
+            JOIN users
+                ON users.id = sessions.user_id
+            WHERE sessions.token_hash = ?
+              AND sessions.expires_at > ?
+            """,
+            (token_hash, current_time)
+        )
+
+        return row_to_dict(cursor.fetchone())
+
+    finally:
+        connection.close()
+
+
+def delete_session(token_hash):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            "DELETE FROM sessions WHERE token_hash = ?",
+            (token_hash,)
+        )
+
+        connection.commit()
+        return cursor.rowcount > 0
+
+    finally:
+        connection.close()
+
+
+def delete_expired_sessions(current_time):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            "DELETE FROM sessions WHERE expires_at <= ?",
+            (current_time,)
+        )
+
+        connection.commit()
+        return cursor.rowcount
+
+    finally:
+        connection.close()
+
+
+# =========================================================
+# CHATS
 # =========================================================
 
 def save_chat(
     question,
     answer,
     intent="general",
-    agent_type="general"
+    agent_type="general",
+    user_id=None
 ):
-
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
         cursor.execute(
             """
             INSERT INTO chats
             (
+                user_id,
                 question,
                 answer,
                 intent,
                 agent_type
             )
-            VALUES
-            (
-                ?,
-                ?,
-                ?,
-                ?
-            )
+            VALUES (?, ?, ?, ?, ?)
             """,
             (
+                user_id,
                 question,
                 answer,
                 intent,
@@ -377,65 +458,62 @@ def save_chat(
         )
 
         connection.commit()
-
         return cursor.lastrowid
 
     finally:
-
         connection.close()
 
 
-# =========================================================
-# GET CHAT HISTORY
-# =========================================================
-
-def get_chat_history():
-
+def get_chat_history(user_id=None):
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
-        cursor.execute(
-            """
+        query = """
             SELECT
-                id,
-                question,
-                answer,
-                intent,
-                agent_type,
-                created_at
+                chats.id,
+                chats.user_id,
+                chats.question,
+                chats.answer,
+                chats.intent,
+                chats.agent_type,
+                chats.created_at,
+                users.name AS student_name,
+                users.email AS student_email
             FROM chats
-            ORDER BY id DESC
-            """
-        )
+            LEFT JOIN users
+                ON users.id = chats.user_id
+        """
 
-        rows = cursor.fetchall()
+        values = ()
 
-        return rows_to_dict(rows)
+        if user_id is not None:
+            query += " WHERE chats.user_id = ?"
+            values = (user_id,)
+
+        query += " ORDER BY chats.id DESC"
+
+        cursor.execute(query, values)
+        return rows_to_dict(cursor.fetchall())
 
     finally:
-
         connection.close()
 
 
 # =========================================================
-# SAVE TICKET
+# TICKETS
 # =========================================================
 
 def save_ticket(
     question,
     intent="general",
-    department="-"
+    department="-",
+    user_id=None
 ):
-
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
         ticket_id = (
             "TKT-"
             + datetime.now().strftime("%Y%m%d")
@@ -448,22 +526,17 @@ def save_ticket(
             INSERT INTO tickets
             (
                 ticket_id,
+                user_id,
                 question,
                 intent,
                 department,
                 status
             )
-            VALUES
-            (
-                ?,
-                ?,
-                ?,
-                ?,
-                ?
-            )
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
                 ticket_id,
+                user_id,
                 question,
                 intent,
                 department,
@@ -472,143 +545,140 @@ def save_ticket(
         )
 
         connection.commit()
-
         return ticket_id
 
     finally:
-
         connection.close()
 
-
-# =========================================================
-# CREATE TICKET ALIAS
-# =========================================================
 
 def create_ticket_record(
     question,
     intent="general",
-    department="-"
+    department="-",
+    user_id=None
 ):
-
     return save_ticket(
         question=question,
         intent=intent,
-        department=department
+        department=department,
+        user_id=user_id
     )
 
 
-# =========================================================
-# GET ALL TICKETS
-# =========================================================
-
-def get_tickets():
-
+def get_tickets(user_id=None):
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
-        cursor.execute(
-            """
+        query = """
             SELECT
-                id,
-                ticket_id,
-                question,
-                intent,
-                department,
-                status,
-                created_at,
-                updated_at
+                tickets.id,
+                tickets.ticket_id,
+                tickets.user_id,
+                tickets.question,
+                tickets.intent,
+                tickets.department,
+                tickets.status,
+                tickets.created_at,
+                tickets.updated_at,
+                users.name AS student_name,
+                users.email AS student_email
             FROM tickets
-            ORDER BY id DESC
-            """
-        )
+            LEFT JOIN users
+                ON users.id = tickets.user_id
+        """
 
-        rows = cursor.fetchall()
+        values = ()
 
-        return rows_to_dict(rows)
+        if user_id is not None:
+            query += " WHERE tickets.user_id = ?"
+            values = (user_id,)
+
+        query += " ORDER BY tickets.id DESC"
+
+        cursor.execute(query, values)
+        return rows_to_dict(cursor.fetchall())
 
     finally:
-
         connection.close()
 
 
-# =========================================================
-# GET SINGLE TICKET
-# =========================================================
-
 def get_ticket(ticket_id):
-
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
         cursor.execute(
             """
             SELECT
-                id,
-                ticket_id,
-                question,
-                intent,
-                department,
-                status,
-                created_at,
-                updated_at
+                tickets.id,
+                tickets.ticket_id,
+                tickets.user_id,
+                tickets.question,
+                tickets.intent,
+                tickets.department,
+                tickets.status,
+                tickets.created_at,
+                tickets.updated_at,
+                users.name AS student_name,
+                users.email AS student_email
             FROM tickets
-            WHERE ticket_id = ?
+            LEFT JOIN users
+                ON users.id = tickets.user_id
+            WHERE tickets.ticket_id = ?
             """,
             (ticket_id,)
         )
 
-        row = cursor.fetchone()
-
-        return row_to_dict(row)
+        return row_to_dict(cursor.fetchone())
 
     finally:
-
         connection.close()
 
 
-# =========================================================
-# UPDATE TICKET STATUS
-# =========================================================
-
-def update_ticket_status(
-    ticket_id,
-    status
-):
-
+def assign_ticket_to_user(ticket_id, user_id):
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
         cursor.execute(
             """
             UPDATE tickets
-
             SET
-                status = ?,
+                user_id = ?,
                 updated_at = CURRENT_TIMESTAMP
-
             WHERE ticket_id = ?
             """,
-            (
-                status,
-                ticket_id
-            )
+            (user_id, ticket_id)
         )
 
         connection.commit()
-
         return cursor.rowcount > 0
 
     finally:
+        connection.close()
 
+
+def update_ticket_status(ticket_id, status):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            UPDATE tickets
+            SET
+                status = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE ticket_id = ?
+            """,
+            (status, ticket_id)
+        )
+
+        connection.commit()
+        return cursor.rowcount > 0
+
+    finally:
         connection.close()
 
 
@@ -616,18 +686,11 @@ def update_ticket_status(
 # FACULTY INFORMATION
 # =========================================================
 
-def save_faculty_information(
-    category,
-    title,
-    content
-):
-
+def save_faculty_information(category, title, content):
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
         cursor.execute(
             """
             INSERT INTO faculty
@@ -636,41 +699,23 @@ def save_faculty_information(
                 title,
                 content
             )
-            VALUES
-            (
-                ?,
-                ?,
-                ?
-            )
+            VALUES (?, ?, ?)
             """,
-            (
-                category,
-                title,
-                content
-            )
+            (category, title, content)
         )
 
         connection.commit()
-
         return cursor.lastrowid
 
     finally:
-
         connection.close()
 
 
-# =========================================================
-# GET FACULTY INFORMATION
-# =========================================================
-
 def get_faculty_information():
-
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
         cursor.execute(
             """
             SELECT
@@ -685,18 +730,11 @@ def get_faculty_information():
             """
         )
 
-        rows = cursor.fetchall()
-
-        return rows_to_dict(rows)
+        return rows_to_dict(cursor.fetchall())
 
     finally:
-
         connection.close()
 
-
-# =========================================================
-# UPDATE FACULTY INFORMATION
-# =========================================================
 
 def update_faculty_information(
     information_id,
@@ -704,23 +742,18 @@ def update_faculty_information(
     title,
     content
 ):
-
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
         cursor.execute(
             """
             UPDATE faculty
-
             SET
                 category = ?,
                 title = ?,
                 content = ?,
                 updated_at = CURRENT_TIMESTAMP
-
             WHERE id = ?
             """,
             (
@@ -732,59 +765,34 @@ def update_faculty_information(
         )
 
         connection.commit()
-
         return cursor.rowcount > 0
 
     finally:
-
         connection.close()
 
 
-# =========================================================
-# DELETE FACULTY INFORMATION
-# =========================================================
-
-def delete_faculty_information(
-    information_id
-):
-
+def delete_faculty_information(information_id):
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
         cursor.execute(
-            """
-            DELETE FROM faculty
-            WHERE id = ?
-            """,
+            "DELETE FROM faculty WHERE id = ?",
             (information_id,)
         )
 
         connection.commit()
-
         return cursor.rowcount > 0
 
     finally:
-
         connection.close()
 
 
-# =========================================================
-# GET SINGLE FACULTY INFORMATION
-# =========================================================
-
-def get_faculty_information_by_id(
-    information_id
-):
-
+def get_faculty_information_by_id(information_id):
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
         cursor.execute(
             """
             SELECT
@@ -800,40 +808,38 @@ def get_faculty_information_by_id(
             (information_id,)
         )
 
-        row = cursor.fetchone()
-
-        return row_to_dict(row)
+        return row_to_dict(cursor.fetchone())
 
     finally:
-
         connection.close()
 
 
 # =========================================================
-# DATABASE TEST
+# DATABASE STATUS
 # =========================================================
 
 def database_status():
-
     connection = get_connection()
-
     cursor = connection.cursor()
 
     try:
-
         tables = cursor.execute(
             """
             SELECT name
             FROM sqlite_master
             WHERE type = 'table'
+            ORDER BY name
             """
         ).fetchall()
 
-        return [
-            row["name"]
-            for row in tables
-        ]
+        return [row["name"] for row in tables]
 
     finally:
-
         connection.close()
+
+
+# =========================================================
+# INITIALIZE DATABASE
+# =========================================================
+
+create_tables()

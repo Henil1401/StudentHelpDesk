@@ -15,27 +15,162 @@
 
 body{
     font-family:Arial,Helvetica,sans-serif;
-    background:#f4f7fb;
+    background:#f1f5f9;
     color:#1f2937;
     min-height:100vh;
 }
 
 header{
-    background:linear-gradient(135deg,#2563eb,#4f46e5);
+    position:relative;
+    overflow:hidden;
+    background:linear-gradient(135deg,#091b35,#173f70 58%,#0f625f);
     color:white;
-    padding:28px 20px;
-    text-align:center;
-    box-shadow:0 4px 15px rgba(0,0,0,.12);
+    padding:22px 20px;
+    box-shadow:0 8px 25px rgba(9,27,53,.2);
+}
+
+header::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    opacity:.12;
+    background-image:
+        linear-gradient(rgba(255,255,255,.16) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(255,255,255,.16) 1px,transparent 1px);
+    background-size:38px 38px;
+}
+
+.header-shell{
+    position:relative;
+    z-index:1;
+    width:92%;
+    max-width:1100px;
+    margin:auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:25px;
+}
+
+.header-brand{
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+.header-logo{
+    width:54px;
+    height:54px;
+    flex:0 0 54px;
+    display:grid;
+    place-items:center;
+    border:1px solid rgba(255,255,255,.45);
+    border-radius:16px;
+    color:#0b1f3a;
+    background:linear-gradient(135deg,#f0fdfa,#7dd3fc);
+    box-shadow:0 10px 24px rgba(0,0,0,.18);
+    font-size:18px;
+    font-weight:900;
 }
 
 header h1{
-    font-size:30px;
-    margin-bottom:8px;
+    font-size:26px;
+    margin-bottom:5px;
 }
 
 header p{
-    font-size:15px;
-    opacity:.9;
+    font-size:13px;
+    color:#dbeafe;
+}
+
+.user-panel{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:9px 10px 9px 11px;
+    border:1px solid rgba(255,255,255,.2);
+    border-radius:16px;
+    background:rgba(5,20,38,.35);
+    backdrop-filter:blur(10px);
+}
+
+.user-avatar{
+    width:38px;
+    height:38px;
+    flex:0 0 38px;
+    display:grid;
+    place-items:center;
+    border-radius:12px;
+    color:#0b1f3a;
+    background:linear-gradient(135deg,#99f6e4,#7dd3fc);
+    font-size:14px;
+    font-weight:900;
+}
+
+.user-details{
+    min-width:115px;
+    display:flex;
+    flex-direction:column;
+    line-height:1.25;
+}
+
+.user-details strong{
+    max-width:170px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:13px;
+}
+
+.user-details span{
+    margin-top:3px;
+    color:#bfdbfe;
+    font-size:10px;
+    font-weight:bold;
+    letter-spacing:.8px;
+    text-transform:uppercase;
+}
+
+.logout-button{
+    border:1px solid rgba(255,255,255,.22);
+    border-radius:10px;
+    padding:9px 12px;
+    color:white;
+    background:rgba(255,255,255,.1);
+    cursor:pointer;
+    font-size:12px;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.logout-button:hover{
+    color:#0b1f3a;
+    background:white;
+    transform:translateY(-1px);
+}
+
+.logout-button:disabled{
+    opacity:.65;
+    cursor:wait;
+}
+
+.session-notice{
+    display:none;
+    position:fixed;
+    z-index:1000;
+    top:18px;
+    left:50%;
+    transform:translateX(-50%);
+    width:min(460px,calc(100% - 30px));
+    padding:13px 16px;
+    border:1px solid #fecaca;
+    border-radius:12px;
+    color:#991b1b;
+    background:#fff1f2;
+    box-shadow:0 15px 35px rgba(127,29,29,.18);
+    text-align:center;
+    font-size:13px;
+    font-weight:bold;
 }
 
 .container{
@@ -52,11 +187,30 @@ header p{
 }
 
 .stat-card{
+    position:relative;
+    overflow:hidden;
     background:white;
     border-radius:15px;
     padding:20px;
+    border:1px solid #e8edf5;
     box-shadow:0 6px 20px rgba(0,0,0,.06);
     text-align:center;
+    transition:.2s;
+}
+
+.stat-card::before{
+    content:"";
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    height:3px;
+    background:linear-gradient(90deg,#2563eb,#14b8a6);
+}
+
+.stat-card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 12px 28px rgba(15,35,65,.1);
 }
 
 .stat-icon{
@@ -80,6 +234,7 @@ header p{
     background:white;
     border-radius:18px;
     padding:25px;
+    border:1px solid #e8edf5;
     box-shadow:0 8px 30px rgba(0,0,0,.08);
 }
 
@@ -126,7 +281,7 @@ textarea:focus{
 
 #askButton{
     border:none;
-    background:linear-gradient(135deg,#2563eb,#4f46e5);
+    background:linear-gradient(135deg,#1d4ed8,#2563eb,#0f766e);
     color:white;
     padding:12px 25px;
     border-radius:10px;
@@ -364,6 +519,34 @@ textarea:focus{
     flex-wrap:wrap;
 }
 
+.student-ticket-status{
+    display:inline-flex;
+    align-items:center;
+    padding:6px 11px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:800;
+    text-transform:capitalize;
+}
+
+.student-ticket-status.open{
+    color:#92400e;
+    background:#fffbeb;
+    border:1px solid #fde68a;
+}
+
+.student-ticket-status.in_progress{
+    color:#1d4ed8;
+    background:#eff6ff;
+    border:1px solid #bfdbfe;
+}
+
+.student-ticket-status.resolved{
+    color:#166534;
+    background:#f0fdf4;
+    border:1px solid #bbf7d0;
+}
+
 .ticket-status-select{
     padding:7px 10px;
     border:1px solid #e5e7eb;
@@ -395,7 +578,665 @@ footer{
     color:#9ca3af;
 }
 
+
+/* =====================================================
+   PROFESSIONAL DASHBOARD THEME
+===================================================== */
+
+body::before{
+    content:"";
+    position:fixed;
+    z-index:-1;
+    inset:0;
+    pointer-events:none;
+    background:
+        radial-gradient(circle at 8% 18%,rgba(37,99,235,.07),transparent 25%),
+        radial-gradient(circle at 92% 75%,rgba(20,184,166,.07),transparent 28%);
+}
+
+.container{
+    margin:28px auto 45px;
+}
+
+.welcome-banner{
+    position:relative;
+    overflow:hidden;
+    min-height:145px;
+    margin-bottom:20px;
+    padding:25px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:25px;
+    border:1px solid #dce7f4;
+    border-radius:20px;
+    background:
+        radial-gradient(circle at 92% 12%,rgba(56,189,248,.16),transparent 24%),
+        linear-gradient(120deg,#ffffff,#f7fbff 60%,#f0fdfa);
+    box-shadow:0 12px 35px rgba(15,35,65,.07);
+    animation:dashboardEnter .65s ease both;
+}
+
+.welcome-banner::after{
+    content:"";
+    position:absolute;
+    width:190px;
+    height:190px;
+    right:-100px;
+    bottom:-120px;
+    border:30px solid rgba(37,99,235,.06);
+    border-radius:50%;
+}
+
+.welcome-content,
+.welcome-meta{
+    position:relative;
+    z-index:1;
+}
+
+.welcome-kicker{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+    color:#2563eb;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:1.6px;
+}
+
+.welcome-kicker::before{
+    content:"";
+    width:20px;
+    height:2px;
+    border-radius:20px;
+    background:#14b8a6;
+}
+
+.welcome-banner h2{
+    margin:0;
+    color:#0b1f3a;
+    font-size:25px;
+    letter-spacing:-.5px;
+}
+
+#welcomeName{
+    color:#2563eb;
+}
+
+.welcome-description{
+    margin-top:7px;
+    color:#64748b;
+    font-size:13px;
+    line-height:1.6;
+}
+
+.welcome-meta{
+    min-width:205px;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:10px;
+}
+
+.live-status{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 11px;
+    border:1px solid #bbf7d0;
+    border-radius:999px;
+    color:#166534;
+    background:#f0fdf4;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.6px;
+}
+
+.live-status span{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:#22c55e;
+    box-shadow:0 0 0 4px rgba(34,197,94,.13);
+    animation:statusPulse 2s ease-in-out infinite;
+}
+
+.current-date{
+    color:#64748b;
+    font-size:12px;
+    font-weight:700;
+}
+
+.dashboard{
+    gap:17px;
+    margin-bottom:20px;
+}
+
+.stat-card{
+    min-height:106px;
+    padding:19px;
+    display:grid;
+    grid-template-columns:48px 1fr;
+    grid-template-areas:
+        "icon number"
+        "icon title";
+    column-gap:14px;
+    align-items:center;
+    border-radius:17px;
+    text-align:left;
+    box-shadow:0 9px 26px rgba(15,35,65,.06);
+    opacity:0;
+    animation:statEnter .55s ease forwards;
+}
+
+.stat-card:nth-child(1){animation-delay:.08s;}
+.stat-card:nth-child(2){animation-delay:.16s;}
+.stat-card:nth-child(3){animation-delay:.24s;}
+.stat-card:nth-child(4){animation-delay:.32s;}
+
+.stat-card::before{
+    height:4px;
+}
+
+.stat-card:nth-child(2)::before{
+    background:linear-gradient(90deg,#0f766e,#2dd4bf);
+}
+
+.stat-card:nth-child(3)::before{
+    background:linear-gradient(90deg,#d97706,#fbbf24);
+}
+
+.stat-card:nth-child(4)::before{
+    background:linear-gradient(90deg,#15803d,#4ade80);
+}
+
+.stat-icon{
+    grid-area:icon;
+    width:48px;
+    height:48px;
+    display:grid;
+    place-items:center;
+    margin:0;
+    border-radius:14px;
+    color:#1d4ed8;
+    background:#eff6ff;
+    font-size:15px;
+    font-weight:900;
+}
+
+.stat-card:nth-child(2) .stat-icon{
+    color:#0f766e;
+    background:#f0fdfa;
+}
+
+.stat-card:nth-child(3) .stat-icon{
+    color:#b45309;
+    background:#fffbeb;
+}
+
+.stat-card:nth-child(4) .stat-icon{
+    color:#15803d;
+    background:#f0fdf4;
+}
+
+.stat-number{
+    grid-area:number;
+    align-self:end;
+    color:#0b1f3a;
+    font-size:26px;
+    line-height:1;
+}
+
+.stat-title{
+    grid-area:title;
+    align-self:start;
+    margin-top:5px;
+    color:#64748b;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.2px;
+}
+
+.main-card{
+    overflow:hidden;
+    padding:0;
+    border-radius:20px;
+    box-shadow:0 12px 38px rgba(15,35,65,.08);
+    animation:dashboardEnter .65s .18s ease both;
+}
+
+.question-section{
+    position:relative;
+    margin:0;
+    padding:27px 28px 24px;
+    background:linear-gradient(135deg,#ffffff,#f8fbff);
+}
+
+.question-title,
+.history-title,
+.ticket-title{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:18px;
+    color:#0b1f3a;
+}
+
+.section-title-icon{
+    width:40px;
+    height:40px;
+    flex:0 0 40px;
+    display:grid;
+    place-items:center;
+    border-radius:12px;
+    color:white;
+    background:linear-gradient(135deg,#1d4ed8,#0f766e);
+    box-shadow:0 8px 18px rgba(37,99,235,.2);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.4px;
+}
+
+.title-copy{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+}
+
+.title-copy small{
+    color:#2563eb;
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:1.2px;
+}
+
+.title-copy strong{
+    color:#0b1f3a;
+    font-size:18px;
+}
+
+textarea{
+    min-height:112px;
+    border:1px solid #dce4ef;
+    border-radius:14px;
+    padding:16px 17px;
+    color:#24324a;
+    background:white;
+    box-shadow:inset 0 1px 2px rgba(15,35,65,.03);
+}
+
+textarea:hover{
+    border-color:#bfdbfe;
+}
+
+textarea:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 4px rgba(37,99,235,.09),0 10px 25px rgba(37,99,235,.06);
+    transform:translateY(-1px);
+}
+
+.input-bottom{
+    margin-top:12px;
+}
+
+.shortcut{
+    padding:6px 9px;
+    border:1px solid #e2e8f0;
+    border-radius:8px;
+    color:#64748b;
+    background:#f8fafc;
+    font-size:10px;
+    font-weight:700;
+}
+
+#askButton,
+#createTicketButton{
+    position:relative;
+    overflow:hidden;
+    border-radius:11px;
+    box-shadow:0 9px 20px rgba(37,99,235,.2);
+    transition:transform .2s,box-shadow .2s;
+}
+
+#askButton::before,
+#createTicketButton::before{
+    content:"";
+    position:absolute;
+    top:-60%;
+    left:-60%;
+    width:35%;
+    height:220%;
+    transform:rotate(25deg);
+    background:rgba(255,255,255,.3);
+    transition:left .55s;
+}
+
+#askButton:hover::before,
+#createTicketButton:hover::before{
+    left:135%;
+}
+
+#askButton:hover,
+#createTicketButton:hover{
+    transform:translateY(-2px);
+    box-shadow:0 13px 25px rgba(37,99,235,.26);
+}
+
+.answer-box{
+    position:relative;
+    margin:0 28px 28px;
+    padding:21px;
+    overflow:hidden;
+    border:1px solid #dbe7f3;
+    border-left:4px solid #14b8a6;
+    border-radius:15px;
+    background:linear-gradient(120deg,#f8fbff,#f0fdfa);
+    box-shadow:0 8px 22px rgba(15,35,65,.05);
+}
+
+.answer-box::after{
+    content:"AI";
+    position:absolute;
+    right:18px;
+    bottom:-18px;
+    color:rgba(37,99,235,.05);
+    font-size:72px;
+    font-weight:900;
+}
+
+.answer-header,
+#answer,
+.answer-info{
+    position:relative;
+    z-index:1;
+}
+
+.assistant-label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:#0b1f3a !important;
+}
+
+.assistant-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#14b8a6;
+    box-shadow:0 0 0 5px rgba(20,184,166,.11);
+    animation:statusPulse 2s ease-in-out infinite;
+}
+
+.status{
+    border:1px solid #bbf7d0;
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:.4px;
+}
+
+#answer{
+    min-height:82px;
+    color:#334155;
+    font-size:14px;
+}
+
+.answer-info{
+    color:#64748b;
+    font-size:11px;
+}
+
+.history-section,
+.ticket-section{
+    overflow:hidden;
+    margin-top:20px;
+    padding:25px 27px;
+    border:1px solid #e2e8f0;
+    border-radius:20px;
+    box-shadow:0 12px 35px rgba(15,35,65,.065);
+    animation:dashboardEnter .65s ease both;
+}
+
+.history-section{
+    animation-delay:.28s;
+}
+
+.ticket-section{
+    animation-delay:.38s;
+}
+
+.history-title,
+.ticket-title{
+    font-size:18px;
+}
+
+.history-item,
+.ticket-card{
+    position:relative;
+    overflow:hidden;
+    border:1px solid #e2e8f0;
+    border-left:4px solid #2563eb;
+    border-radius:13px;
+    background:linear-gradient(120deg,#ffffff,#f8fafc);
+    box-shadow:0 5px 15px rgba(15,35,65,.035);
+    transition:transform .2s,box-shadow .2s,border-color .2s;
+    animation:itemEnter .35s ease both;
+}
+
+.ticket-card{
+    border-left-color:#14b8a6;
+}
+
+.history-item:hover,
+.ticket-card:hover{
+    transform:translateX(3px);
+    border-color:#bfdbfe;
+    box-shadow:0 10px 24px rgba(15,35,65,.08);
+}
+
+.history-question{
+    color:#0f2747;
+    font-size:14px;
+    font-weight:700;
+}
+
+.history-answer{
+    color:#475569;
+    font-size:13px;
+}
+
+.history-meta{
+    color:#94a3b8;
+    font-weight:600;
+}
+
+.empty-history{
+    padding:26px;
+    border:1px dashed #cbd5e1;
+    border-radius:12px;
+    color:#94a3b8;
+    background:#f8fafc;
+}
+
+.clear-history{
+    border:1px solid #fecaca;
+    border-radius:10px;
+    background:#fff7f7;
+    transition:.2s;
+}
+
+.clear-history:hover{
+    color:white;
+    background:#dc2626;
+    transform:translateY(-1px);
+}
+
+.ticket-label{
+    color:#334155;
+    font-size:12px;
+}
+
+.ticket-controls{
+    margin-top:12px;
+}
+
+#ticketIntent,
+.ticket-status-select{
+    min-height:41px;
+    border:1px solid #dce4ef;
+    border-radius:10px;
+    color:#334155;
+    background:#f8fafc;
+    outline:none;
+}
+
+#ticketIntent:focus,
+.ticket-status-select:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.08);
+}
+
+#createTicketButton{
+    padding:12px 18px;
+    background:linear-gradient(135deg,#0f766e,#2563eb);
+}
+
+.ticket-result{
+    border-radius:12px;
+    font-size:13px;
+    animation:itemEnter .35s ease both;
+}
+
+.tickets-header{
+    padding:13px 14px;
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+    background:#f8fafc;
+    color:#0b1f3a;
+}
+
+#refreshTicketsButton{
+    border:1px solid #bfdbfe;
+    border-radius:9px;
+    color:#1d4ed8;
+    background:#eff6ff;
+    transition:.2s;
+}
+
+#refreshTicketsButton:hover{
+    color:white;
+    background:#2563eb;
+    transform:rotate(-2deg) translateY(-1px);
+}
+
+.ticket-card-id{
+    color:#0f766e;
+    font-size:13px;
+}
+
+.ticket-card-question{
+    color:#0f2747;
+    font-size:14px;
+    font-weight:700;
+}
+
+.ticket-card-meta{
+    color:#64748b;
+    font-size:12px;
+}
+
+.update-ticket-button{
+    border-radius:9px;
+    background:linear-gradient(135deg,#1d4ed8,#0f766e);
+    transition:.2s;
+}
+
+.update-ticket-button:hover{
+    transform:translateY(-1px);
+    box-shadow:0 7px 14px rgba(37,99,235,.18);
+}
+
+footer{
+    margin-top:10px;
+    padding:28px 15px;
+    border-top:1px solid #e2e8f0;
+    color:#475569;
+    background:rgba(255,255,255,.55);
+    backdrop-filter:blur(8px);
+    font-weight:700;
+}
+
+.footer-small{
+    color:#94a3b8;
+    font-weight:500;
+}
+
+@keyframes dashboardEnter{
+    from{
+        opacity:0;
+        transform:translateY(18px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+@keyframes statEnter{
+    from{
+        opacity:0;
+        transform:translateY(16px) scale(.97);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0) scale(1);
+    }
+}
+
+@keyframes itemEnter{
+    from{
+        opacity:0;
+        transform:translateX(-9px);
+    }
+    to{
+        opacity:1;
+        transform:translateX(0);
+    }
+}
+
+@keyframes statusPulse{
+    0%,100%{
+        opacity:1;
+        transform:scale(1);
+    }
+    50%{
+        opacity:.65;
+        transform:scale(.82);
+    }
+}
+
 @media(max-width:700px){
+    .header-shell{
+        width:100%;
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .user-panel{
+        justify-content:space-between;
+    }
+
+    .welcome-banner{
+        flex-direction:column;
+        align-items:flex-start;
+        padding:22px;
+    }
+
+    .welcome-meta{
+        min-width:0;
+        align-items:flex-start;
+    }
+
     .dashboard{
         grid-template-columns:repeat(2,1fr);
     }
@@ -414,15 +1255,39 @@ footer{
         flex-direction:column;
         gap:8px;
     }
+
+    .question-section{
+        padding:23px 20px 20px;
+    }
+
+    .answer-box{
+        margin:0 20px 22px;
+    }
+
+    .history-section,
+    .ticket-section{
+        padding:22px 20px;
+    }
 }
 
 @media(max-width:450px){
     .dashboard{
-        grid-template-columns:1fr 1fr;
+        grid-template-columns:1fr;
     }
 
     header h1{
-        font-size:24px;
+        font-size:21px;
+    }
+
+    .header-logo{
+        width:48px;
+        height:48px;
+        flex-basis:48px;
+    }
+
+    .user-details{
+        min-width:0;
+        flex:1;
     }
 
     .container{
@@ -431,7 +1296,29 @@ footer{
     }
 
     .main-card{
-        padding:16px;
+        padding:0;
+    }
+
+    .welcome-banner h2{
+        font-size:21px;
+    }
+
+    .section-title-icon{
+        width:36px;
+        height:36px;
+        flex-basis:36px;
+    }
+
+    .title-copy strong{
+        font-size:16px;
+    }
+}
+
+@media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{
+        animation-duration:.01ms !important;
+        animation-iteration-count:1 !important;
+        scroll-behavior:auto !important;
     }
 }
 </style>
@@ -439,35 +1326,86 @@ footer{
 
 <body>
 
+<div id="sessionNotice" class="session-notice" role="alert"></div>
+
 <header>
-    <h1>🤖 AI Student Help Desk</h1>
-    <p>Cloud-Based AI Agent for Student Support</p>
+    <div class="header-shell">
+
+        <div class="header-brand">
+            <div class="header-logo">AI</div>
+
+            <div>
+                <h1>AI Student Help Desk</h1>
+                <p>Silver Oak University • Smart Campus Support</p>
+            </div>
+        </div>
+
+        <div class="user-panel">
+            <div id="userAvatar" class="user-avatar">--</div>
+
+            <div class="user-details">
+                <strong id="userName">Loading account...</strong>
+                <span id="userRole">Student</span>
+            </div>
+
+            <button id="logoutButton" class="logout-button" type="button">
+                Logout
+            </button>
+        </div>
+
+    </div>
 </header>
 
 <main class="container">
 
+<section class="welcome-banner">
+    <div class="welcome-content">
+        <div class="welcome-kicker">STUDENT DASHBOARD</div>
+
+        <h2>
+            <span id="welcomeGreeting">Welcome</span>,
+            <span id="welcomeName">Student</span>
+        </h2>
+
+        <p class="welcome-description">
+            Ask academic questions, review your activity and track support requests from one place.
+        </p>
+    </div>
+
+    <div class="welcome-meta">
+        <div class="live-status">
+            <span></span>
+            AI SERVICES ONLINE
+        </div>
+
+        <div id="currentDate" class="current-date">
+            Loading date...
+        </div>
+    </div>
+</section>
+
 <div class="dashboard">
 
     <div class="stat-card">
-        <div class="stat-icon">❓</div>
+        <div class="stat-icon">Q</div>
         <div class="stat-number" id="totalQuestions">0</div>
         <div class="stat-title">Total Questions</div>
     </div>
 
     <div class="stat-card">
-        <div class="stat-icon">🎫</div>
+        <div class="stat-icon">T</div>
         <div class="stat-number" id="totalTickets">0</div>
         <div class="stat-title">Total Tickets</div>
     </div>
 
     <div class="stat-card">
-        <div class="stat-icon">🔓</div>
+        <div class="stat-icon">O</div>
         <div class="stat-number" id="openTickets">0</div>
         <div class="stat-title">Open Tickets</div>
     </div>
 
     <div class="stat-card">
-        <div class="stat-icon">✅</div>
+        <div class="stat-icon">✓</div>
         <div class="stat-number" id="resolvedTickets">0</div>
         <div class="stat-title">Resolved Tickets</div>
     </div>
@@ -480,7 +1418,12 @@ footer{
     <div class="question-section">
 
         <div class="question-title">
-            💬 Ask Your Question
+            <span class="section-title-icon">AI</span>
+
+            <span class="title-copy">
+                <small>SMART ASSISTANT</small>
+                <strong>Ask your question</strong>
+            </span>
         </div>
 
         <textarea
@@ -511,8 +1454,9 @@ footer{
 
         <div class="answer-header">
 
-            <span>
-                🤖 AI Assistant
+            <span class="assistant-label">
+                <span class="assistant-dot"></span>
+                AI Assistant
             </span>
 
             <span
@@ -552,7 +1496,12 @@ footer{
 <div class="history-section">
 
     <h3 class="history-title">
-        📜 Question History
+        <span class="section-title-icon">H</span>
+
+        <span class="title-copy">
+            <small>YOUR ACTIVITY</small>
+            <strong>Question history</strong>
+        </span>
     </h3>
 
     <div id="history">
@@ -570,7 +1519,7 @@ footer{
             id="clearHistoryButton"
             class="clear-history"
         >
-            🗑 Clear History
+            Clear History
         </button>
 
     </div>
@@ -581,7 +1530,12 @@ footer{
 <div class="ticket-section">
 
     <h3 class="ticket-title">
-        🎫 Ticket Management
+        <span class="section-title-icon">T</span>
+
+        <span class="title-copy">
+            <small>STUDENT SUPPORT</small>
+            <strong>Ticket management</strong>
+        </span>
     </h3>
 
     <label
@@ -631,7 +1585,7 @@ footer{
             type="button"
             id="createTicketButton"
         >
-            🎫 Create Ticket
+            Create Ticket
         </button>
 
     </div>
@@ -644,14 +1598,14 @@ footer{
     <div class="tickets-header">
 
         <strong>
-            📋 All Tickets
+            Your Support Tickets
         </strong>
 
         <button
             type="button"
             id="refreshTicketsButton"
         >
-            🔄 Refresh
+            Refresh
         </button>
 
     </div>
@@ -672,11 +1626,11 @@ footer{
 <footer>
 
 <p>
-AI Student Help Desk • Cloud-Based AI Agent
+AI Student Help Desk • Silver Oak University
 </p>
 
 <p class="footer-small">
-Powered by RAG + FAISS + Sentence Transformers
+Secure campus support powered by RAG, FAISS and multi-agent intelligence
 </p>
 
 </footer>
@@ -684,7 +1638,7 @@ Powered by RAG + FAISS + Sentence Transformers
 
 <script>
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = window.location.origin;
 const API_URL = API_BASE_URL + "/ask";
 
 
@@ -742,6 +1696,30 @@ document.getElementById("openTickets");
 const resolvedTickets =
 document.getElementById("resolvedTickets");
 
+const userNameBox =
+document.getElementById("userName");
+
+const userRoleBox =
+document.getElementById("userRole");
+
+const userAvatarBox =
+document.getElementById("userAvatar");
+
+const logoutButton =
+document.getElementById("logoutButton");
+
+const sessionNotice =
+document.getElementById("sessionNotice");
+
+const welcomeGreetingBox =
+document.getElementById("welcomeGreeting");
+
+const welcomeNameBox =
+document.getElementById("welcomeName");
+
+const currentDateBox =
+document.getElementById("currentDate");
+
 
 /* =====================================================
    SAFE LOCAL STORAGE
@@ -780,6 +1758,227 @@ function safeStorageRemove(key){
     }
     catch(error){
         console.warn("LocalStorage remove blocked:", error);
+    }
+}
+
+
+/* =====================================================
+   AUTHENTICATION AND SESSION
+===================================================== */
+
+function getUserInitials(name){
+
+    const words = String(name || "Student")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+
+    if(words.length === 0){
+        return "ST";
+    }
+
+    return words
+        .slice(0,2)
+        .map(function(word){
+            return word.charAt(0).toUpperCase();
+        })
+        .join("");
+}
+
+
+function updateWelcomePanel(name){
+
+    const now = new Date();
+    const hour = now.getHours();
+
+    let greeting = "Good evening";
+
+    if(hour < 12){
+        greeting = "Good morning";
+    }
+    else if(hour < 17){
+        greeting = "Good afternoon";
+    }
+
+    welcomeGreetingBox.innerText =
+    greeting;
+
+    welcomeNameBox.innerText =
+    name || "Student";
+
+    try{
+        currentDateBox.innerText =
+        new Intl.DateTimeFormat(
+            "en-IN",
+            {
+                weekday:"long",
+                day:"numeric",
+                month:"long",
+                year:"numeric"
+            }
+        ).format(now);
+    }
+    catch(error){
+        currentDateBox.innerText =
+        now.toLocaleDateString();
+    }
+}
+
+
+function showSessionExpired(){
+
+    sessionNotice.innerText =
+    "Your session has expired. Redirecting to login...";
+
+    sessionNotice.style.display =
+    "block";
+
+    setTimeout(
+        function(){
+            window.location.replace("/");
+        },
+        900
+    );
+}
+
+
+function handleUnauthorizedResponse(response){
+
+    if(response.status === 401){
+        showSessionExpired();
+        return true;
+    }
+
+    return false;
+}
+
+
+async function loadCurrentUser(){
+
+    try{
+        const response =
+        await fetch(
+            API_BASE_URL + "/auth/me",
+            {
+                credentials:"include"
+            }
+        );
+
+        if(handleUnauthorizedResponse(response)){
+            return false;
+        }
+
+        if(!response.ok){
+            throw new Error(
+                "Unable to verify your account."
+            );
+        }
+
+        const data =
+        await response.json();
+
+        const user =
+        data.user || {};
+
+        const role =
+        String(user.role || "student")
+            .toLowerCase();
+
+        if(role !== "student"){
+            window.location.replace(
+                data.dashboard || "/"
+            );
+            return false;
+        }
+
+        const name =
+        String(user.name || "Student").trim();
+
+        userNameBox.innerText =
+        name || "Student";
+
+        userRoleBox.innerText =
+        role + " account";
+
+        userAvatarBox.innerText =
+        getUserInitials(name);
+
+        updateWelcomePanel(name);
+
+        return true;
+    }
+    catch(error){
+        console.error(
+            "Current user error:",
+            error
+        );
+
+        sessionNotice.innerText =
+        "Unable to verify your login. Please refresh the page.";
+
+        sessionNotice.style.display =
+        "block";
+
+        return false;
+    }
+}
+
+
+function clearPrivateDashboardData(){
+
+    [
+        "studentHelpDeskCurrentQuestion",
+        "studentHelpDeskHistory",
+        "studentHelpDeskLastAgent",
+        "studentHelpDeskLastAnswer",
+        "studentHelpDeskLastConfidence"
+    ].forEach(
+        function(key){
+            safeStorageRemove(key);
+        }
+    );
+}
+
+
+async function logoutUser(){
+
+    logoutButton.disabled = true;
+    logoutButton.innerText = "Logging out...";
+
+    try{
+        const response =
+        await fetch(
+            API_BASE_URL + "/auth/logout",
+            {
+                method:"POST",
+                credentials:"include"
+            }
+        );
+
+        if(!response.ok && response.status !== 401){
+            throw new Error(
+                "Logout failed. Please try again."
+            );
+        }
+
+        clearPrivateDashboardData();
+
+        window.location.replace("/");
+    }
+    catch(error){
+        console.error(
+            "Logout error:",
+            error
+        );
+
+        sessionNotice.innerText =
+        error.message;
+
+        sessionNotice.style.display =
+        "block";
+
+        logoutButton.disabled = false;
+        logoutButton.innerText = "Logout";
     }
 }
 
@@ -1148,6 +2347,8 @@ async function askQuestion(){
             {
                 method:"POST",
 
+                credentials:"include",
+
                 headers:{
                     "Content-Type":
                     "application/json"
@@ -1158,6 +2359,11 @@ async function askQuestion(){
                 })
             }
         );
+
+
+        if(handleUnauthorizedResponse(response)){
+            return;
+        }
 
 
         const responseText =
@@ -1448,6 +2654,8 @@ async function createSupportTicket(){
 
                 method:"POST",
 
+                credentials:"include",
+
                 headers:{
                     "Content-Type":
                     "application/json"
@@ -1461,6 +2669,11 @@ async function createSupportTicket(){
                 })
             }
         );
+
+
+        if(handleUnauthorizedResponse(response)){
+            return;
+        }
 
 
         const data =
@@ -1578,7 +2791,7 @@ async function createSupportTicket(){
 
 
         createTicketButton.innerText =
-        "🎫 Create Ticket";
+        "Create Ticket";
     }
 }
 
@@ -1603,8 +2816,16 @@ async function loadTickets(){
         const response =
         await fetch(
             API_BASE_URL +
-            "/tickets"
+            "/tickets",
+            {
+                credentials:"include"
+            }
         );
+
+
+        if(handleUnauthorizedResponse(response)){
+            return;
+        }
 
 
         const data =
@@ -1838,162 +3059,21 @@ function createTicketCard(
             </strong>
 
 
-            <select
-                class="ticket-status-select"
-            >
-
-                <option
-                    value="open"
-                    ${ticketStatus==="open"?"selected":""}
-                >
-                    Open
-                </option>
-
-
-                <option
-                    value="in_progress"
-                    ${ticketStatus==="in_progress"?"selected":""}
-                >
-                    In Progress
-                </option>
-
-
-                <option
-                    value="resolved"
-                    ${ticketStatus==="resolved"?"selected":""}
-                >
-                    Resolved
-                </option>
-
-            </select>
-
-
-            <button
-                type="button"
-                class="update-ticket-button"
-            >
-                Update
-            </button>
+            <span class="student-ticket-status ${escapeHTML(ticketStatus)}">
+                ${
+                    ticketStatus === "in_progress"
+                    ? "In Progress"
+                    : ticketStatus.charAt(0).toUpperCase() + ticketStatus.slice(1)
+                }
+            </span>
 
         </div>
     `;
 
 
-    const updateButton =
-    card.querySelector(
-        ".update-ticket-button"
-    );
-
-
-    const statusSelect =
-    card.querySelector(
-        ".ticket-status-select"
-    );
-
-
-    updateButton.addEventListener(
-        "click",
-        function(){
-
-            updateTicketStatus(
-                ticketId,
-                statusSelect.value
-            );
-        }
-    );
-
-
     ticketsList.appendChild(
         card
     );
-}
-
-
-/* =====================================================
-   UPDATE TICKET STATUS
-===================================================== */
-
-async function updateTicketStatus(
-    ticketId,
-    statusValue
-){
-
-    try{
-
-
-        const response =
-        await fetch(
-
-            API_BASE_URL +
-            "/tickets/" +
-            encodeURIComponent(
-                ticketId
-            ),
-
-            {
-
-                method:"PATCH",
-
-                headers:{
-                    "Content-Type":
-                    "application/json"
-                },
-
-                body:JSON.stringify({
-                    status:statusValue
-                })
-            }
-        );
-
-
-        const data =
-        await response.json();
-
-
-        if(!response.ok){
-
-            throw new Error(
-                data.message ||
-                "Status update failed."
-            );
-        }
-
-
-        if(
-            data.status !==
-            "success"
-        ){
-
-            throw new Error(
-                data.message ||
-                "Unable to update ticket."
-            );
-        }
-
-
-        alert(
-            "Ticket status updated successfully."
-        );
-
-
-        await loadTickets();
-
-
-    }
-    catch(error){
-
-
-        console.error(
-            "Update Ticket Error:",
-            error
-        );
-
-
-        alert(
-            "Error: " +
-            error.message
-        );
-    }
 }
 
 
@@ -2048,13 +3128,26 @@ refreshTicketsButton.addEventListener(
 );
 
 
+logoutButton.addEventListener(
+    "click",
+    logoutUser
+);
+
+
 /* =====================================================
    PAGE LOAD
 ===================================================== */
 
 window.addEventListener(
     "load",
-    function(){
+    async function(){
+
+        const authenticated =
+        await loadCurrentUser();
+
+        if(!authenticated){
+            return;
+        }
 
         loadCurrentQuestion();
 

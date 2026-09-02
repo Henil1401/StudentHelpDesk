@@ -5,6 +5,7 @@ from app.agents.entity_agent import extract_entities
 from app.agents.retrieval_agent import retrieve_knowledge
 from app.agents.decision_agent import make_decision
 from app.agents.faculty_agent import route_to_faculty
+from app.agents.ticket_agent import create_ticket
 
 
 # =========================================================
@@ -50,7 +51,6 @@ def clean_answer(
 
     # =====================================================
     # ARTIFICIAL INTELLIGENCE EXAM
-    # DIRECT CLEAN ANSWER
     # =====================================================
 
     if (
@@ -422,42 +422,99 @@ def run_agent(
 
 
     # =====================================================
-    # 5. INFORMATION NOT FOUND
+    # 5. CREATE TICKET
     # =====================================================
 
     if decision == "ticket":
 
-        return {
+        department = route_to_faculty(
+            intent
+        )
 
-            "answer":
-                "Sorry, this information is not "
-                "available in the university "
-                "knowledge base.",
+        try:
 
-            "source":
-                "university_knowledge",
+            ticket = create_ticket(
+                question=question,
+                intent=intent,
+                department=department
+            )
 
-            "status":
-                "not_found",
+            if isinstance(ticket, dict):
 
-            "type":
-                "information_not_found",
-
-            "intent":
-                intent,
-
-            "entities":
-                entities,
-
-            "ticket_id":
-                None,
-
-            "faculty":
-                route_to_faculty(
-                    intent
+                ticket_id = ticket.get(
+                    "ticket_id"
                 )
 
-        }
+            else:
+
+                ticket_id = str(ticket)
+
+
+            return {
+
+                "answer":
+                    "The information was not found in the "
+                    "university knowledge base, so a support "
+                    "ticket has been created automatically.",
+
+                "source":
+                    "ticket_system",
+
+                "status":
+                    "ticket_created",
+
+                "type":
+                    "support_ticket",
+
+                "intent":
+                    intent,
+
+                "entities":
+                    entities,
+
+                "ticket_id":
+                    ticket_id,
+
+                "faculty":
+                    department
+
+            }
+
+        except Exception as error:
+
+            print(
+                "Ticket creation error:",
+                error
+            )
+
+            return {
+
+                "answer":
+                    "Sorry, this information is not available "
+                    "in the university knowledge base.",
+
+                "source":
+                    "university_knowledge",
+
+                "status":
+                    "not_found",
+
+                "type":
+                    "information_not_found",
+
+                "intent":
+                    intent,
+
+                "entities":
+                    entities,
+
+                "ticket_id":
+                    None,
+
+                "faculty":
+                    department
+
+            }
 
 
     # =====================================================
