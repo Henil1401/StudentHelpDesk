@@ -24,6 +24,12 @@ from app.database.database import (
     get_ticket,
     assign_ticket_to_user,
     update_ticket_status,
+    save_ticket_reply,
+    get_ticket_replies,
+    approve_latest_ticket_reply,
+    get_approved_answer,
+    save_notification,
+    get_notifications,
     save_chat,
     get_chat_history,
     get_users,
@@ -41,7 +47,8 @@ from app.agents.faculty_agent import route_to_faculty
 
 from app.email_service import (
     send_ticket_created_email,
-    send_ticket_status_email
+    send_ticket_status_email,
+    send_faculty_reply_email
 )
 
 from app.auth import (
@@ -110,6 +117,10 @@ class TicketRequest(BaseModel):
 
 class TicketStatusRequest(BaseModel):
     status: str
+
+
+class TicketReplyRequest(BaseModel):
+    reply: str
 
 
 class FacultyInformationRequest(BaseModel):
@@ -312,6 +323,65 @@ def ask_question(
     try:
 
         q = question.lower().strip()
+
+
+        # =================================================
+        # ADMIN-APPROVED FACULTY KNOWLEDGE
+        # =================================================
+
+        approved_knowledge = get_approved_answer(
+            question
+        )
+
+
+        if approved_knowledge:
+
+            answer = approved_knowledge["answer"]
+
+            try:
+
+                save_chat(
+                    question=question,
+                    answer=answer,
+                    intent=approved_knowledge.get(
+                        "intent",
+                        "general"
+                    ),
+                    agent_type="approved_faculty_knowledge",
+                    user_id=current_user["id"]
+                )
+
+            except Exception as history_error:
+
+                print(
+                    "CHAT HISTORY ERROR:",
+                    history_error
+                )
+
+
+            previous_question = question
+
+
+            return {
+                "question": question,
+                "answer": answer,
+                "confidence": 1.0,
+                "status": "answered",
+                "source": "approved_faculty_knowledge",
+                "type": "approved_faculty_knowledge",
+                "intent": approved_knowledge.get(
+                    "intent",
+                    "general"
+                ),
+                "department": approved_knowledge.get(
+                    "department",
+                    "-"
+                ),
+                "ticket_id": None,
+                "knowledge_id": approved_knowledge.get(
+                    "knowledge_id"
+                )
+            }
 
 
         # =================================================
@@ -1376,6 +1446,313 @@ def update_ticket(
 
 
 # =========================================================
+# FACULTY REPLY TO TICKET
+# =========================================================
+
+@app.post("/tickets/{ticket_id}/reply")
+def reply_to_ticket(
+    ticket_id: str,
+    request: TicketReplyRequest,
+    background_tasks: BackgroundTasks,
+    current_user=Depends(
+        get_current_user
+    )
+):
+
+    current_role = str(
+        current_user.get(
+            "role",
+            ""
+        )
+    ).strip().lower()
+
+
+    if current_role not in [
+        "faculty",
+        "admin"
+    ]:
+
+        raise HTTPException(
+            status_code=403,
+            detail="Only faculty or admin can reply to tickets."
+        )
+
+
+    ticket_id = ticket_id.strip()
+    reply = request.reply.strip()
+
+
+    if not reply:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Reply cannot be empty."
+        )
+
+
+    try:
+
+        ticket = get_ticket(
+            ticket_id
+        )
+
+
+        if not ticket:
+
+            raise HTTPException(
+                status_code=404,
+                detail="Ticket not found."
+            )
+
+
+        reply_id = save_ticket_reply(
+            ticket_id=ticket_id,
+            faculty_user_id=current_user["id"],
+            reply=reply
+        )
+
+
+        ticket_status = str(
+            ticket.get(
+                "status",
+                "open"
+            )
+        ).strip().lower()
+
+
+        if ticket_status == "open":
+
+            update_ticket_status(
+                ticket_id,
+                "in_progress"
+            )
+
+            ticket_status = "in_progress"
+
+
+        student_user_id = ticket.get(
+            "user_id"
+        )
+
+
+        if student_user_id is not None:
+
+            save_notification(
+                user_id=student_user_id,
+                ticket_id=ticket_id,
+                message=(
+                    "A faculty reply was added to ticket "
+                    + ticket_id
+                    + "."
+                )
+            )
+
+
+        student_email = str(
+            ticket.get(
+                "student_email",
+                ""
+            )
+        ).strip()
+
+
+        email_sent = False
+
+
+        if student_email:
+
+            background_tasks.add_task(
+                send_faculty_reply_email,
+                to_email=student_email,
+                ticket_id=ticket_id,
+                reply=reply,
+                faculty_name=current_user.get(
+                    "name",
+                    "Faculty Support Team"
+                )
+            )
+
+            email_sent = True
+
+
+        return {
+            "status": "success",
+            "message": "Reply sent to student successfully.",
+            "reply_id": reply_id,
+            "ticket_id": ticket_id,
+            "ticket_status": ticket_status,
+            "email_sent": email_sent
+        }
+
+
+    except HTTPException:
+
+        raise
+
+
+    except Exception as e:
+
+        print(
+            "TICKET REPLY ERROR:",
+            e
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to send faculty reply."
+        )
+
+
+# =========================================================
+# GET TICKET REPLIES
+# =========================================================
+
+@app.get("/tickets/{ticket_id}/replies")
+def get_replies_for_ticket(
+    ticket_id: str,
+    current_user=Depends(
+        get_current_user
+    )
+):
+
+    ticket = get_ticket(
+        ticket_id.strip()
+    )
+
+
+    if not ticket:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Ticket not found."
+        )
+
+
+    current_role = str(
+        current_user.get(
+            "role",
+            ""
+        )
+    ).strip().lower()
+
+
+    if (
+        current_role == "student"
+        and str(ticket.get("user_id"))
+        != str(current_user["id"])
+    ):
+
+        raise HTTPException(
+            status_code=403,
+            detail="You can only view replies for your own tickets."
+        )
+
+
+    return {
+        "status": "success",
+        "replies": get_ticket_replies(
+            ticket_id.strip()
+        )
+    }
+
+
+# =========================================================
+# ADMIN APPROVE FACULTY REPLY
+# =========================================================
+
+@app.post("/tickets/{ticket_id}/approve-reply")
+def approve_ticket_reply(
+    ticket_id: str,
+    current_user=Depends(
+        require_roles("admin")
+    )
+):
+
+    ticket_id = ticket_id.strip()
+
+
+    if not ticket_id:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Ticket ID is required."
+        )
+
+
+    try:
+
+        approval = approve_latest_ticket_reply(
+            ticket_id=ticket_id,
+            admin_user_id=current_user["id"]
+        )
+
+
+        if not approval:
+
+            raise HTTPException(
+                status_code=404,
+                detail="No faculty reply is available for approval."
+            )
+
+
+        already_approved = bool(
+            approval.get("already_approved")
+        )
+
+
+        return {
+            "status": "success",
+            "message": (
+                "Faculty reply was already approved."
+                if already_approved
+                else "Faculty reply approved and added to the knowledge base."
+            ),
+            "ticket_id": ticket_id,
+            "reply_id": approval.get("reply_id"),
+            "knowledge_id": approval.get("knowledge_id"),
+            "already_approved": already_approved,
+            "ticket_status": "resolved"
+        }
+
+
+    except HTTPException:
+
+        raise
+
+
+    except Exception as e:
+
+        print(
+            "REPLY APPROVAL ERROR:",
+            e
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to approve the faculty reply."
+        )
+
+
+# =========================================================
+# USER NOTIFICATIONS
+# =========================================================
+
+@app.get("/notifications")
+def get_current_notifications(
+    current_user=Depends(
+        get_current_user
+    )
+):
+
+    return {
+        "status": "success",
+        "notifications": get_notifications(
+            current_user["id"]
+        )
+    }
+
+
+# =========================================================
 # FACULTY ADD
 # =========================================================
 
@@ -1694,8 +2071,15 @@ def register_user(
 
         faculty_code = os.getenv(
             "FACULTY_REGISTRATION_CODE",
-            "FACULTY2026"
-        )
+            ""
+        ).strip()
+
+        if not faculty_code:
+
+            raise HTTPException(
+                status_code=503,
+                detail="Faculty registration is currently disabled."
+            )
 
         if not hmac.compare_digest(
             access_code,
@@ -1711,8 +2095,15 @@ def register_user(
 
         admin_code = os.getenv(
             "ADMIN_REGISTRATION_CODE",
-            "ADMIN2026"
-        )
+            ""
+        ).strip()
+
+        if not admin_code:
+
+            raise HTTPException(
+                status_code=503,
+                detail="Admin registration is currently disabled."
+            )
 
         if not hmac.compare_digest(
             access_code,

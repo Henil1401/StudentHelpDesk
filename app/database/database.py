@@ -120,6 +120,35 @@ def create_tables():
 
         cursor.execute(
             """
+            CREATE TABLE IF NOT EXISTS ticket_replies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticket_id TEXT NOT NULL,
+                faculty_user_id INTEGER,
+                reply TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (ticket_id) REFERENCES tickets(ticket_id) ON DELETE CASCADE,
+                FOREIGN KEY (faculty_user_id) REFERENCES users(id) ON DELETE SET NULL
+            )
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                ticket_id TEXT,
+                message TEXT NOT NULL,
+                is_read INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (ticket_id) REFERENCES tickets(ticket_id) ON DELETE CASCADE
+            )
+            """
+        )
+
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS faculty (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 category TEXT NOT NULL,
@@ -151,6 +180,34 @@ def create_tables():
             "chats",
             "user_id",
             "user_id INTEGER"
+        )
+
+        add_column_if_missing(
+            cursor,
+            "ticket_replies",
+            "approval_status",
+            "approval_status TEXT DEFAULT 'pending'"
+        )
+
+        add_column_if_missing(
+            cursor,
+            "ticket_replies",
+            "approved_by",
+            "approved_by INTEGER"
+        )
+
+        add_column_if_missing(
+            cursor,
+            "ticket_replies",
+            "approved_at",
+            "approved_at TEXT"
+        )
+
+        add_column_if_missing(
+            cursor,
+            "ticket_replies",
+            "knowledge_id",
+            "knowledge_id INTEGER"
         )
 
         connection.commit()
@@ -582,7 +639,42 @@ def get_tickets(user_id=None):
                 tickets.created_at,
                 tickets.updated_at,
                 users.name AS student_name,
-                users.email AS student_email
+                users.email AS student_email,
+                (
+                    SELECT ticket_replies.reply
+                    FROM ticket_replies
+                    WHERE ticket_replies.ticket_id = tickets.ticket_id
+                    ORDER BY ticket_replies.id DESC
+                    LIMIT 1
+                ) AS faculty_reply,
+                (
+                    SELECT ticket_replies.created_at
+                    FROM ticket_replies
+                    WHERE ticket_replies.ticket_id = tickets.ticket_id
+                    ORDER BY ticket_replies.id DESC
+                    LIMIT 1
+                ) AS reply_created_at,
+                (
+                    SELECT ticket_replies.id
+                    FROM ticket_replies
+                    WHERE ticket_replies.ticket_id = tickets.ticket_id
+                    ORDER BY ticket_replies.id DESC
+                    LIMIT 1
+                ) AS faculty_reply_id,
+                (
+                    SELECT ticket_replies.approval_status
+                    FROM ticket_replies
+                    WHERE ticket_replies.ticket_id = tickets.ticket_id
+                    ORDER BY ticket_replies.id DESC
+                    LIMIT 1
+                ) AS reply_approval_status,
+                (
+                    SELECT ticket_replies.approved_at
+                    FROM ticket_replies
+                    WHERE ticket_replies.ticket_id = tickets.ticket_id
+                    ORDER BY ticket_replies.id DESC
+                    LIMIT 1
+                ) AS reply_approved_at
             FROM tickets
             LEFT JOIN users
                 ON users.id = tickets.user_id
@@ -621,7 +713,42 @@ def get_ticket(ticket_id):
                 tickets.created_at,
                 tickets.updated_at,
                 users.name AS student_name,
-                users.email AS student_email
+                users.email AS student_email,
+                (
+                    SELECT ticket_replies.reply
+                    FROM ticket_replies
+                    WHERE ticket_replies.ticket_id = tickets.ticket_id
+                    ORDER BY ticket_replies.id DESC
+                    LIMIT 1
+                ) AS faculty_reply,
+                (
+                    SELECT ticket_replies.created_at
+                    FROM ticket_replies
+                    WHERE ticket_replies.ticket_id = tickets.ticket_id
+                    ORDER BY ticket_replies.id DESC
+                    LIMIT 1
+                ) AS reply_created_at,
+                (
+                    SELECT ticket_replies.id
+                    FROM ticket_replies
+                    WHERE ticket_replies.ticket_id = tickets.ticket_id
+                    ORDER BY ticket_replies.id DESC
+                    LIMIT 1
+                ) AS faculty_reply_id,
+                (
+                    SELECT ticket_replies.approval_status
+                    FROM ticket_replies
+                    WHERE ticket_replies.ticket_id = tickets.ticket_id
+                    ORDER BY ticket_replies.id DESC
+                    LIMIT 1
+                ) AS reply_approval_status,
+                (
+                    SELECT ticket_replies.approved_at
+                    FROM ticket_replies
+                    WHERE ticket_replies.ticket_id = tickets.ticket_id
+                    ORDER BY ticket_replies.id DESC
+                    LIMIT 1
+                ) AS reply_approved_at
             FROM tickets
             LEFT JOIN users
                 ON users.id = tickets.user_id
@@ -677,6 +804,260 @@ def update_ticket_status(ticket_id, status):
 
         connection.commit()
         return cursor.rowcount > 0
+
+    finally:
+        connection.close()
+
+
+def save_ticket_reply(ticket_id, faculty_user_id, reply):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            INSERT INTO ticket_replies
+            (
+                ticket_id,
+                faculty_user_id,
+                reply
+            )
+            VALUES (?, ?, ?)
+            """,
+            (ticket_id, faculty_user_id, reply)
+        )
+
+        connection.commit()
+        return cursor.lastrowid
+
+    finally:
+        connection.close()
+
+
+def get_ticket_replies(ticket_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                ticket_replies.id,
+                ticket_replies.ticket_id,
+                ticket_replies.faculty_user_id,
+                ticket_replies.reply,
+                ticket_replies.created_at,
+                ticket_replies.approval_status,
+                ticket_replies.approved_by,
+                ticket_replies.approved_at,
+                ticket_replies.knowledge_id,
+                users.name AS faculty_name,
+                users.email AS faculty_email
+            FROM ticket_replies
+            LEFT JOIN users
+                ON users.id = ticket_replies.faculty_user_id
+            WHERE ticket_replies.ticket_id = ?
+            ORDER BY ticket_replies.id DESC
+            """,
+            (ticket_id,)
+        )
+
+        return rows_to_dict(cursor.fetchall())
+
+    finally:
+        connection.close()
+
+
+def approve_latest_ticket_reply(ticket_id, admin_user_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("BEGIN IMMEDIATE")
+
+        cursor.execute(
+            """
+            SELECT
+                ticket_replies.id AS reply_id,
+                ticket_replies.reply,
+                ticket_replies.approval_status,
+                ticket_replies.knowledge_id,
+                tickets.question,
+                tickets.intent,
+                tickets.department
+            FROM ticket_replies
+            INNER JOIN tickets
+                ON tickets.ticket_id = ticket_replies.ticket_id
+            WHERE ticket_replies.ticket_id = ?
+            ORDER BY ticket_replies.id DESC
+            LIMIT 1
+            """,
+            (ticket_id,)
+        )
+
+        reply_record = cursor.fetchone()
+
+        if reply_record is None:
+            connection.rollback()
+            return None
+
+        reply_data = row_to_dict(reply_record)
+
+        if (
+            reply_data.get("approval_status") == "approved"
+            and reply_data.get("knowledge_id") is not None
+        ):
+            connection.commit()
+            reply_data["already_approved"] = True
+            return reply_data
+
+        category = str(
+            reply_data.get("intent") or "general"
+        ).strip().title()
+
+        cursor.execute(
+            """
+            INSERT INTO faculty
+            (
+                category,
+                title,
+                content
+            )
+            VALUES (?, ?, ?)
+            """,
+            (
+                category,
+                reply_data["question"],
+                reply_data["reply"]
+            )
+        )
+
+        knowledge_id = cursor.lastrowid
+
+        cursor.execute(
+            """
+            UPDATE ticket_replies
+            SET
+                approval_status = 'approved',
+                approved_by = ?,
+                approved_at = CURRENT_TIMESTAMP,
+                knowledge_id = ?
+            WHERE id = ?
+            """,
+            (
+                admin_user_id,
+                knowledge_id,
+                reply_data["reply_id"]
+            )
+        )
+
+        cursor.execute(
+            """
+            UPDATE tickets
+            SET
+                status = 'resolved',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE ticket_id = ?
+            """,
+            (ticket_id,)
+        )
+
+        connection.commit()
+
+        reply_data["approval_status"] = "approved"
+        reply_data["knowledge_id"] = knowledge_id
+        reply_data["already_approved"] = False
+
+        return reply_data
+
+    except Exception:
+        connection.rollback()
+        raise
+
+    finally:
+        connection.close()
+
+
+def get_approved_answer(question):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                faculty.content AS answer,
+                faculty.id AS knowledge_id,
+                tickets.intent,
+                tickets.department,
+                ticket_replies.ticket_id
+            FROM ticket_replies
+            INNER JOIN tickets
+                ON tickets.ticket_id = ticket_replies.ticket_id
+            INNER JOIN faculty
+                ON faculty.id = ticket_replies.knowledge_id
+            WHERE ticket_replies.approval_status = 'approved'
+              AND LOWER(TRIM(tickets.question)) = LOWER(TRIM(?))
+            ORDER BY ticket_replies.approved_at DESC
+            LIMIT 1
+            """,
+            (question,)
+        )
+
+        return row_to_dict(cursor.fetchone())
+
+    finally:
+        connection.close()
+
+
+def save_notification(user_id, ticket_id, message):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            INSERT INTO notifications
+            (
+                user_id,
+                ticket_id,
+                message,
+                is_read
+            )
+            VALUES (?, ?, ?, 0)
+            """,
+            (user_id, ticket_id, message)
+        )
+
+        connection.commit()
+        return cursor.lastrowid
+
+    finally:
+        connection.close()
+
+
+def get_notifications(user_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                id,
+                user_id,
+                ticket_id,
+                message,
+                is_read,
+                created_at
+            FROM notifications
+            WHERE user_id = ?
+            ORDER BY id DESC
+            """,
+            (user_id,)
+        )
+
+        return rows_to_dict(cursor.fetchall())
 
     finally:
         connection.close()

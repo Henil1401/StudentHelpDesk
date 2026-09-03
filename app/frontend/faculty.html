@@ -953,6 +953,74 @@
             font-weight:700;
         }
 
+        .ticket-reply-box{
+            margin-top:14px;
+            padding:13px;
+            border:1px solid #dbeafe;
+            border-radius:12px;
+            background:#f8fbff;
+        }
+
+        .ticket-existing-reply{
+            margin-bottom:10px;
+            padding:10px 12px;
+            border-left:3px solid #16a34a;
+            border-radius:8px;
+            color:#166534;
+            background:#f0fdf4;
+            font-size:11px;
+            line-height:1.55;
+        }
+
+        .ticket-reply-textarea{
+            width:100%;
+            min-height:78px;
+            resize:vertical;
+            padding:10px 12px;
+            border:1px solid #cbd5e1;
+            border-radius:10px;
+            color:#0f2747;
+            background:white;
+            font:inherit;
+            font-size:11px;
+            outline:none;
+        }
+
+        .ticket-reply-textarea:focus{
+            border-color:#2563eb;
+            box-shadow:0 0 0 3px rgba(37,99,235,.08);
+        }
+
+        .ticket-reply-actions{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            flex-wrap:wrap;
+            margin-top:9px;
+        }
+
+        .ticket-reply-button{
+            border:none;
+            border-radius:9px;
+            padding:9px 14px;
+            color:white;
+            background:linear-gradient(135deg,#0f766e,#2563eb);
+            cursor:pointer;
+            font-size:10px;
+            font-weight:850;
+        }
+
+        .ticket-reply-button:disabled{
+            opacity:.6;
+            cursor:wait;
+        }
+
+        .ticket-reply-message{
+            color:#64748b;
+            font-size:10px;
+            font-weight:700;
+        }
+
         footer{
             margin-top:10px;
             padding:27px 15px;
@@ -3263,6 +3331,127 @@
                     );
 
 
+                    const replyBox =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    replyBox.className =
+                        "ticket-reply-box";
+
+
+                    if(ticket.faculty_reply){
+
+                        const existingReply =
+                            document.createElement(
+                                "div"
+                            );
+
+
+                        existingReply.className =
+                            "ticket-existing-reply";
+
+
+                        existingReply.innerText =
+                            "Latest faculty reply: " +
+                            ticket.faculty_reply;
+
+
+                        replyBox.appendChild(
+                            existingReply
+                        );
+
+                    }
+
+
+                    const replyTextarea =
+                        document.createElement(
+                            "textarea"
+                        );
+
+
+                    replyTextarea.className =
+                        "ticket-reply-textarea";
+
+
+                    replyTextarea.placeholder =
+                        "Write a reply for the student...";
+
+
+                    const replyActions =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    replyActions.className =
+                        "ticket-reply-actions";
+
+
+                    const replyButton =
+                        document.createElement(
+                            "button"
+                        );
+
+
+                    replyButton.type =
+                        "button";
+
+
+                    replyButton.className =
+                        "ticket-reply-button";
+
+
+                    replyButton.innerText =
+                        "Send Reply";
+
+
+                    const replyMessage =
+                        document.createElement(
+                            "span"
+                        );
+
+
+                    replyMessage.className =
+                        "ticket-reply-message";
+
+
+                    replyButton.addEventListener(
+                        "click",
+                        async function(){
+
+                            await sendTicketReply(
+                                ticketId,
+                                replyTextarea,
+                                replyButton,
+                                replyMessage
+                            );
+
+                        }
+                    );
+
+
+                    replyActions.appendChild(
+                        replyButton
+                    );
+
+
+                    replyActions.appendChild(
+                        replyMessage
+                    );
+
+
+                    replyBox.appendChild(
+                        replyTextarea
+                    );
+
+
+                    replyBox.appendChild(
+                        replyActions
+                    );
+
+
                     card.appendChild(
                         top
                     );
@@ -3275,6 +3464,11 @@
 
                     card.appendChild(
                         controls
+                    );
+
+
+                    card.appendChild(
+                        replyBox
                     );
 
 
@@ -3586,6 +3780,132 @@
 
                 selectElement.disabled =
                     false;
+
+            }
+        }
+
+
+        // =====================================================
+        // SEND FACULTY REPLY
+        // =====================================================
+
+        async function sendTicketReply(
+            ticketId,
+            textareaElement,
+            buttonElement,
+            messageElement
+        ){
+
+            const reply =
+                textareaElement.value.trim();
+
+
+            if(!reply){
+
+                messageElement.innerText =
+                    "Please write a reply.";
+
+                textareaElement.focus();
+
+                return;
+            }
+
+
+            buttonElement.disabled =
+                true;
+
+
+            buttonElement.innerText =
+                "Sending...";
+
+
+            messageElement.innerText =
+                "";
+
+
+            try{
+
+                const response =
+                    await fetch(
+                        API_URL +
+                        "/tickets/" +
+                        encodeURIComponent(
+                            ticketId
+                        ) +
+                        "/reply",
+                        {
+                            method:"POST",
+
+                            credentials:"include",
+
+                            headers:{
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:JSON.stringify(
+                                {
+                                    reply:reply
+                                }
+                            )
+                        }
+                    );
+
+
+                if(handleUnauthorized(response)){
+                    return;
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                if(!response.ok){
+
+                    throw new Error(
+                        data.detail ||
+                        data.message ||
+                        "Unable to send reply."
+                    );
+                }
+
+
+                textareaElement.value =
+                    "";
+
+
+                messageElement.innerText =
+                    "Reply sent successfully.";
+
+
+                setTimeout(
+                    loadTickets,
+                    600
+                );
+
+            }
+            catch(error){
+
+                console.error(
+                    "Ticket reply error:",
+                    error
+                );
+
+
+                messageElement.innerText =
+                    error.message ||
+                    "Reply failed.";
+
+            }
+            finally{
+
+                buttonElement.disabled =
+                    false;
+
+
+                buttonElement.innerText =
+                    "Send Reply";
 
             }
         }

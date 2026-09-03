@@ -419,9 +419,19 @@
         .card-meta{margin-top:9px;color:#94a3b8;font-size:9px;font-weight:650;line-height:1.6;}
         .card-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;padding-top:11px;border-top:1px solid #edf1f6;}
 
+        .reply-review{margin-top:12px;padding:12px;border:1px solid #dbeafe;border-radius:11px;background:#f8fbff;}
+        .reply-review-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px;}
+        .reply-review-title{color:#1e3a5f;font-size:9px;font-weight:900;letter-spacing:.55px;}
+        .approval-badge{padding:4px 7px;border-radius:999px;font-size:8px;font-weight:900;letter-spacing:.4px;text-transform:uppercase;}
+        .approval-badge.pending{color:#92400e;border:1px solid #fde68a;background:#fffbeb;}
+        .approval-badge.approved{color:#166534;border:1px solid #bbf7d0;background:#f0fdf4;}
+        .reply-review-text{color:#334155;font-size:11px;line-height:1.6;white-space:pre-wrap;}
+        .reply-review-meta{margin-top:7px;color:#94a3b8;font-size:8px;font-weight:700;}
+
         .action-button{padding:7px 10px;}
         .progress-action{color:#92400e;border:1px solid #fde68a;background:#fffbeb;}
         .resolve-action{color:#166534;border:1px solid #bbf7d0;background:#f0fdf4;}
+        .approve-action{color:white;border:1px solid #0f766e;background:linear-gradient(135deg,#0f766e,#2563eb);}
         .reopen-action,.edit-action{color:#1d4ed8;border:1px solid #bfdbfe;background:#eff6ff;}
         .delete-action{color:#b91c1c;border:1px solid #fecaca;background:#fff7f7;}
         .action-button:hover{filter:brightness(.96);transform:translateY(-1px);}
@@ -748,7 +758,7 @@
             const filter = byId("ticketFilter").value;
             const items = state.tickets.filter(function(ticket){
                 const status = String(ticket.status || "open");
-                const text = [ticket.ticket_id,ticket.question,ticket.intent,ticket.department].join(" ").toLowerCase();
+                const text = [ticket.ticket_id,ticket.question,ticket.intent,ticket.department,ticket.faculty_reply].join(" ").toLowerCase();
                 return (filter === "all" || status === filter) && text.includes(query);
             });
             list.innerHTML = "";
@@ -765,11 +775,25 @@
                 top.append(title,badge);
                 const question=document.createElement("p");question.className="card-text";question.innerText=ticket.question || "No question provided.";
                 const meta=document.createElement("div");meta.className="card-meta";meta.innerText="Intent: " + (ticket.intent||"-") + " • Department: " + (ticket.department||"-") + "\n" + formatDate(ticket.created_at);
+                let replyReview=null;
+                const facultyReply=String(ticket.faculty_reply||"").trim();
+                const approvalStatus=String(ticket.reply_approval_status||"pending").toLowerCase();
+                if(facultyReply){
+                    replyReview=document.createElement("div");replyReview.className="reply-review";
+                    const replyTop=document.createElement("div");replyTop.className="reply-review-top";
+                    const replyTitle=document.createElement("span");replyTitle.className="reply-review-title";replyTitle.innerText="FACULTY REPLY REVIEW";
+                    const approvalBadge=document.createElement("span");approvalBadge.className="approval-badge "+(approvalStatus==="approved"?"approved":"pending");approvalBadge.innerText=approvalStatus==="approved"?"Knowledge Approved":"Approval Pending";
+                    replyTop.append(replyTitle,approvalBadge);
+                    const replyText=document.createElement("p");replyText.className="reply-review-text";replyText.innerText=facultyReply;
+                    const replyMeta=document.createElement("div");replyMeta.className="reply-review-meta";replyMeta.innerText=approvalStatus==="approved"?"Added to the AI knowledge base • "+formatDate(ticket.reply_approved_at):"Faculty replied • "+formatDate(ticket.reply_created_at);
+                    replyReview.append(replyTop,replyText,replyMeta);
+                }
                 const actions=document.createElement("div");actions.className="card-actions";
+                if(facultyReply && approvalStatus!=="approved") actions.appendChild(makeAction("Approve for Knowledge Base","approve-action",function(){approveTicketReply(ticket.ticket_id);}));
                 if(status !== "in_progress" && status !== "resolved") actions.appendChild(makeAction("In Progress","progress-action",function(){updateTicketStatus(ticket.ticket_id,"in_progress");}));
                 if(status !== "resolved") actions.appendChild(makeAction("Resolve","resolve-action",function(){updateTicketStatus(ticket.ticket_id,"resolved");}));
                 if(status === "resolved") actions.appendChild(makeAction("Reopen","reopen-action",function(){updateTicketStatus(ticket.ticket_id,"open");}));
-                card.append(top,question,meta,actions);list.appendChild(card);
+                card.append(top,question,meta);if(replyReview)card.appendChild(replyReview);card.appendChild(actions);list.appendChild(card);
             });
         }
 
@@ -791,6 +815,17 @@
                 showToast("Ticket status updated successfully.","success");await loadTickets();
             }
             catch(error){showToast(error.message,"error");}
+        }
+
+        async function approveTicketReply(ticketId){
+            if(!confirm("Approve this faculty reply and add it to the AI knowledge base?")) return;
+            try{
+                const data=await apiFetch("/tickets/"+encodeURIComponent(ticketId)+"/approve-reply",{method:"POST"});
+                if(data.status!=="success") throw new Error(data.message||"Reply approval failed.");
+                showToast(data.message||"Faculty reply approved successfully.","success",3600);
+                await Promise.all([loadTickets(),loadFaculty()]);
+            }
+            catch(error){showToast(error.message,"error",4000);}
         }
 
         function renderUsers(){

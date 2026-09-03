@@ -5,7 +5,6 @@ from email.message import EmailMessage
 from dotenv import load_dotenv
 
 
-# Load values from .env
 load_dotenv()
 
 
@@ -111,6 +110,40 @@ New Status:
 {readable_status}
 
 You can check your ticket from the Student Help Desk.
+
+Thank you,
+AI Student Help Desk
+"""
+
+    return send_email(
+        to_email,
+        subject,
+        message
+    )
+
+
+def send_faculty_reply_email(
+    to_email,
+    ticket_id,
+    reply,
+    faculty_name
+):
+
+    sender_name = faculty_name or "Faculty Support Team"
+
+    subject = f"Student Help Desk - Reply for Ticket {ticket_id}"
+
+    message = f"""
+Hello Student,
+
+The faculty team has replied to your support ticket.
+
+Ticket ID: {ticket_id}
+
+Reply from {sender_name}:
+{reply}
+
+Please login to the Student Help Desk to view the latest ticket status.
 
 Thank you,
 AI Student Help Desk

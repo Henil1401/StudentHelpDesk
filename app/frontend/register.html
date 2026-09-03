@@ -762,8 +762,8 @@
                     </div>
 
                     <div id="accessField" class="access-field">
-                        <label for="accessCode">Authorized access code</label>
-                        <input id="accessCode" type="password" placeholder="Enter the provided access code" autocomplete="off">
+                        <label for="accessCode">University authorization code</label>
+                        <input id="accessCode" type="password" placeholder="Enter the privately provided code" autocomplete="new-password">
                     </div>
 
                     <div class="field-row">
@@ -851,7 +851,7 @@
             accessCodeInput.required = protectedRole;
 
             if(protectedRole){
-                roleHelp.innerText = "Faculty and Admin registration requires an authorized access code.";
+                roleHelp.innerText = "This role requires a private code issued by the university administrator.";
             }
             else{
                 roleHelp.innerText = "Student accounts can be created directly.";

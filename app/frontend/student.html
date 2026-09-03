@@ -547,6 +547,30 @@ textarea:focus{
     border:1px solid #bbf7d0;
 }
 
+.faculty-reply-card{
+    margin-top:13px;
+    padding:12px 14px;
+    border:1px solid #bbf7d0;
+    border-left:4px solid #16a34a;
+    border-radius:10px;
+    color:#166534;
+    background:#f0fdf4;
+    font-size:13px;
+    line-height:1.6;
+}
+
+.faculty-reply-title{
+    margin-bottom:4px;
+    font-size:12px;
+    font-weight:800;
+}
+
+.faculty-reply-date{
+    margin-top:5px;
+    color:#64748b;
+    font-size:10px;
+}
+
 .ticket-status-select{
     padding:7px 10px;
     border:1px solid #e5e7eb;
@@ -3010,6 +3034,16 @@ function createTicketCard(
     "open";
 
 
+    const facultyReply =
+    ticket.faculty_reply ||
+    "";
+
+
+    const replyCreatedAt =
+    ticket.reply_created_at ||
+    "";
+
+
     card.innerHTML = `
 
         <div class="ticket-card-id">
@@ -3068,6 +3102,33 @@ function createTicketCard(
             </span>
 
         </div>
+
+
+        ${
+            facultyReply
+            ? `
+                <div class="faculty-reply-card">
+                    <div class="faculty-reply-title">
+                        👩‍🏫 Faculty Reply
+                    </div>
+
+                    <div>
+                        ${escapeHTML(facultyReply)}
+                    </div>
+
+                    ${
+                        replyCreatedAt
+                        ? `
+                            <div class="faculty-reply-date">
+                                ${escapeHTML(replyCreatedAt)}
+                            </div>
+                        `
+                        : ""
+                    }
+                </div>
+            `
+            : ""
+        }
     `;
 
 
