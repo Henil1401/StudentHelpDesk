@@ -1,7 +1,7 @@
 from pathlib import Path
+import os
 import re
 
-from sentence_transformers import SentenceTransformer
 import faiss
 from pypdf import PdfReader
 
@@ -22,87 +22,46 @@ PDF_FILE = KNOWLEDGE_DIR / "silver_oak_university.pdf"
 
 
 # =========================================================
-# READ KNOWLEDGE.TXT
+# READ KNOWLEDGE FILES
 # =========================================================
 
 text_parts = []
 
 if TEXT_FILE.exists():
-
     try:
-
         text_parts.append(
-            TEXT_FILE.read_text(
-                encoding="utf-8"
-            )
+            TEXT_FILE.read_text(encoding="utf-8")
         )
-
     except Exception as e:
-
-        print(
-            "Knowledge file error:",
-            e
-        )
-
-
-# =========================================================
-# READ PDF
-# =========================================================
+        print("Knowledge file error:", e)
 
 if PDF_FILE.exists():
-
     try:
-
-        reader = PdfReader(
-            str(PDF_FILE)
-        )
+        reader = PdfReader(str(PDF_FILE))
 
         for page in reader.pages:
-
             page_text = page.extract_text()
 
             if page_text:
-
-                text_parts.append(
-                    page_text
-                )
+                text_parts.append(page_text)
 
     except Exception as e:
-
-        print(
-            "PDF reading error:",
-            e
-        )
+        print("PDF reading error:", e)
 
 
 # =========================================================
 # CLEAN TEXT
 # =========================================================
 
-raw_text = "\n".join(
-    text_parts
-)
+raw_text = "\n".join(text_parts)
 
-text = re.sub(
-    r"\s+",
-    " ",
-    raw_text
-).strip()
-
+text = re.sub(r"\s+", " ", raw_text).strip()
 
 print("====================================")
 print("AI STUDENT HELP DESK - RAG")
 print("====================================")
-
-print(
-    "Knowledge file:",
-    TEXT_FILE.exists()
-)
-
-print(
-    "PDF loaded:",
-    PDF_FILE.exists()
-)
+print("Knowledge file:", TEXT_FILE.exists())
+print("PDF loaded:", PDF_FILE.exists())
 
 
 # =========================================================
@@ -110,7 +69,6 @@ print(
 # =========================================================
 
 EXAMS = {
-
     "artificial intelligence":
         "Artificial Intelligence exam is on 10 November 2026 from 10:00 AM to 12:00 PM in Room A-101.",
 
@@ -124,8 +82,7 @@ EXAMS = {
         "Cloud Computing exam is on 19 November 2026 from 10:00 AM to 12:00 PM in Room A-101.",
 
     "software engineering":
-        "Software Engineering exam is on 23 November 2026 from 10:00 AM to 12:00 PM in Room A-104."
-
+        "Software Engineering exam is on 23 November 2026 from 10:00 AM to 12:00 PM in Room A-104.",
 }
 
 
@@ -134,7 +91,6 @@ EXAMS = {
 # =========================================================
 
 EVENTS = {
-
     "student orientation programme":
         "Student Orientation Programme is on 5 November 2026 at 11:00 AM in the Seminar Hall.",
 
@@ -145,8 +101,7 @@ EVENTS = {
         "Student Project Presentation is on 26 November 2026 at 10:00 AM in the Seminar Hall.",
 
     "annual cultural event":
-        "Annual Cultural Event is on 30 November 2026 at 4:00 PM in the Main Auditorium."
-
+        "Annual Cultural Event is on 30 November 2026 at 4:00 PM in the Main Auditorium.",
 }
 
 
@@ -155,13 +110,9 @@ EVENTS = {
 # =========================================================
 
 HOLIDAYS = [
-
     "9 November 2026 - Diwali Holiday",
-
     "10 November 2026 - Academic Holiday as scheduled",
-
-    "24 November 2026 - Guru Nanak Jayanti"
-
+    "24 November 2026 - Guru Nanak Jayanti",
 ]
 
 
@@ -170,12 +121,10 @@ HOLIDAYS = [
 # =========================================================
 
 FEES_ANSWER = (
-
     "To pay your fees, login to the university/student portal, "
     "open the Fees or Fee Payment section, select the applicable fee, "
     "complete the online payment, and save or download the payment "
     "receipt for future reference."
-
 )
 
 
@@ -184,30 +133,91 @@ FEES_ANSWER = (
 # =========================================================
 
 HOSTEL_ANSWER = (
-
     "For changing your hostel room, contact the Hostel Administration "
     "or Warden office. Submit a room-change request mentioning your "
     "current room, reason for change, and preferred room if applicable. "
     "The request will be reviewed by the hostel administration."
-
 )
 
 
 # =========================================================
 # EMBEDDING MODEL
+#
+# Render: HELPDESK_EMBEDDINGS=onnx
+# Local: leave that variable unset to use the original model.
 # =========================================================
 
-print(
-    "Loading embedding model..."
-)
+if os.getenv("HELPDESK_EMBEDDINGS", "").strip().lower() == "onnx":
+    import numpy as np
+    from fastembed import TextEmbedding
 
-model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
-)
+    class CloudEmbeddingModel:
+        def __init__(self):
+            self.backend = TextEmbedding(
+                model_name="sentence-transformers/all-MiniLM-L6-v2",
+                threads=1,
+            )
 
-print(
-    "Embedding model loaded."
-)
+        def encode(
+            self,
+            sentences,
+            convert_to_numpy=True,
+            normalize_embeddings=False,
+        ):
+            if isinstance(sentences, str):
+                sentences = [sentences]
+
+            vectors = list(
+                self.backend.embed(
+                    sentences,
+                    batch_size=1,
+                )
+            )
+
+            if not vectors:
+                return np.empty(
+                    (0, 384),
+                    dtype=np.float32,
+                )
+
+            embeddings = np.asarray(
+                vectors,
+                dtype=np.float32,
+            )
+
+            if normalize_embeddings:
+                lengths = np.linalg.norm(
+                    embeddings,
+                    axis=1,
+                    keepdims=True,
+                )
+
+                embeddings = (
+                    embeddings / np.maximum(lengths, 1e-12)
+                )
+
+            return embeddings
+
+    print(
+        "Loading cloud ONNX embedding model...",
+        flush=True,
+    )
+
+    model = CloudEmbeddingModel()
+
+else:
+    from sentence_transformers import SentenceTransformer
+
+    print(
+        "Loading local embedding model...",
+        flush=True,
+    )
+
+    model = SentenceTransformer(
+        "all-MiniLM-L6-v2"
+    )
+
+print("Embedding model loaded.", flush=True)
 
 
 # =========================================================
@@ -217,30 +227,16 @@ print(
 chunks = []
 
 if text:
-
     words = text.split()
-
     chunk_size = 150
 
-    for i in range(
-        0,
-        len(words),
-        chunk_size
-    ):
-
+    for i in range(0, len(words), chunk_size):
         chunk = " ".join(
-            words[
-                i:i + chunk_size
-            ]
+            words[i:i + chunk_size]
         )
 
-        if len(
-            chunk.strip()
-        ) > 20:
-
-            chunks.append(
-                chunk.strip()
-            )
+        if len(chunk.strip()) > 20:
+            chunks.append(chunk.strip())
 
 
 # =========================================================
@@ -248,36 +244,22 @@ if text:
 # =========================================================
 
 if chunks:
-
     embeddings = model.encode(
-
         chunks,
-
         convert_to_numpy=True,
-
-        normalize_embeddings=True
-
-    ).astype(
-        "float32"
-    )
+        normalize_embeddings=True,
+    ).astype("float32")
 
     index = faiss.IndexFlatIP(
         embeddings.shape[1]
     )
 
-    index.add(
-        embeddings
-    )
+    index.add(embeddings)
 
 else:
-
     index = None
 
-
-print(
-    "General RAG chunks:",
-    len(chunks)
-)
+print("General RAG chunks:", len(chunks))
 
 
 # =========================================================
@@ -285,20 +267,11 @@ print(
 # =========================================================
 
 def get_latest_faculty_information():
-
     try:
-
-        information = get_faculty_information()
-
-        return information
+        return get_faculty_information()
 
     except Exception as e:
-
-        print(
-            "Faculty information error:",
-            e
-        )
-
+        print("Faculty information error:", e)
         return []
 
 
@@ -306,64 +279,31 @@ def get_latest_faculty_information():
 # FACULTY INFORMATION SEARCH
 # =========================================================
 
-def search_faculty_information(
-    question: str
-):
-
+def search_faculty_information(question: str):
     if not question:
-
         return []
 
     try:
-
         faculty_information = (
             get_latest_faculty_information()
         )
 
     except Exception as e:
-
-        print(
-            "Faculty search error:",
-            e
-        )
-
+        print("Faculty search error:", e)
         return []
 
     if not faculty_information:
-
         return []
 
     q = question.lower().strip()
-
-    q = re.sub(
-        r"[^\w\s]",
-        " ",
-        q
-    )
-
-    q = re.sub(
-        r"\s+",
-        " ",
-        q
-    ).strip()
-
-    # =====================================================
-    # QUESTION WORDS
-    # =====================================================
+    q = re.sub(r"[^\w\s]", " ", q)
+    q = re.sub(r"\s+", " ", q).strip()
 
     question_words = set(
-        re.findall(
-            r"\b[a-zA-Z0-9]+\b",
-            q
-        )
+        re.findall(r"\b[a-zA-Z0-9]+\b", q)
     )
 
-    # =====================================================
-    # STOP WORDS
-    # =====================================================
-
     stop_words = {
-
         "what",
         "when",
         "where",
@@ -395,102 +335,62 @@ def search_faculty_information(
         "exam",
         "examination",
         "paper",
-        "test"
-
+        "test",
     }
 
     meaningful_words = (
-        question_words
-        - stop_words
+        question_words - stop_words
     )
-
-    # =====================================================
-    # CHECK FACULTY RECORDS
-    # =====================================================
 
     matched = []
 
     for item in faculty_information:
-
         category = str(
-            item.get(
-                "category",
-                ""
-            )
+            item.get("category", "")
         ).lower()
 
         title = str(
-            item.get(
-                "title",
-                ""
-            )
+            item.get("title", "")
         ).lower()
 
         content = str(
-            item.get(
-                "content",
-                ""
-            )
+            item.get("content", "")
         ).lower()
 
         combined_text = (
-            category
-            + " "
-            + title
-            + " "
-            + content
+            category + " " + title + " " + content
         )
 
         record_words = set(
             re.findall(
                 r"\b[a-zA-Z0-9]+\b",
-                combined_text
+                combined_text,
             )
         )
 
         common_words = (
-            meaningful_words
-            & record_words
+            meaningful_words & record_words
         )
 
-        score = len(
-            common_words
-        )
-
-        # =================================================
-        # TITLE MATCH
-        # =================================================
+        score = len(common_words)
 
         title_words = set(
             re.findall(
                 r"\b[a-zA-Z0-9]+\b",
-                title
+                title,
             )
         )
 
         title_matches = (
-            meaningful_words
-            & title_words
+            meaningful_words & title_words
         )
 
-        score += (
-            len(title_matches) * 5
-        )
-
-        # =================================================
-        # CATEGORY MATCH
-        # =================================================
+        score += len(title_matches) * 5
 
         if category and category in q:
-
             score += 3
 
-        # =================================================
-        # FACULTY QUESTION
-        # =================================================
-
         faculty_words = [
-
             "faculty",
             "teacher",
             "professor",
@@ -502,8 +402,7 @@ def search_faculty_information(
             "handled by",
             "who teaches",
             "who handle",
-            "who is teaching"
-
+            "who is teaching",
         ]
 
         is_faculty_question = any(
@@ -512,134 +411,74 @@ def search_faculty_information(
         )
 
         if is_faculty_question:
-
             score += 10
-
-        # =================================================
-        # TIME MATCH
-        # =================================================
 
         if (
             "time" in q
             and re.search(
                 r"\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b",
                 content,
-                re.IGNORECASE
+                re.IGNORECASE,
             )
         ):
-
             score += 8
 
-        # =================================================
-        # VENUE MATCH
-        # =================================================
-
         if (
-
             (
                 "where" in q
                 or "venue" in q
                 or "room" in q
             )
-
             and re.search(
                 r"\b(room|lab|auditorium|hall)\b",
                 content,
-                re.IGNORECASE
+                re.IGNORECASE,
             )
-
         ):
-
             score += 8
-
-        # =================================================
-        # MEETING
-        # =================================================
 
         if (
             "meeting" in q
             and "meeting" in combined_text
         ):
-
             score += 8
-
-        # =================================================
-        # TOMORROW
-        # =================================================
 
         if (
             "tomorrow" in q
             and "tomorrow" in combined_text
         ):
-
             score += 6
 
-        # =================================================
-        # ADD MATCH
-        # =================================================
-
         if score > 0:
-
             matched.append({
-
                 "score": score,
-
-                "item": item
-
+                "item": item,
             })
 
-    # =====================================================
-    # NO MATCH
-    # =====================================================
-
     if not matched:
-
         return []
-
-    # =====================================================
-    # SORT BEST MATCH
-    # =====================================================
 
     matched.sort(
         key=lambda x: x["score"],
-        reverse=True
+        reverse=True,
     )
 
     best = matched[0]["item"]
 
     answer = (
-
-        str(
-            best.get(
-                "title",
-                ""
-            )
-        )
-
+        str(best.get("title", ""))
         + ": "
-
-        + str(
-            best.get(
-                "content",
-                ""
-            )
-        )
-
+        + str(best.get("content", ""))
     )
 
     print(
         "Faculty information matched:",
-        best.get(
-            "title",
-            ""
-        ),
+        best.get("title", ""),
         "Score:",
-        matched[0]["score"]
+        matched[0]["score"],
     )
 
-    return [
-        answer
-    ]
+    return [answer]
 
 
 # =========================================================
@@ -648,55 +487,37 @@ def search_faculty_information(
 
 def semantic_search(
     question: str,
-    top_k: int = 3
+    top_k: int = 3,
 ):
-
     if not question:
-
         return []
 
     if index is None:
-
         return []
 
     question_embedding = model.encode(
-
         [question],
-
         convert_to_numpy=True,
-
-        normalize_embeddings=True
-
-    ).astype(
-        "float32"
-    )
+        normalize_embeddings=True,
+    ).astype("float32")
 
     scores, indices = index.search(
-
         question_embedding,
-
-        top_k
+        top_k,
     )
 
     results = []
 
     for score, idx in zip(
         scores[0],
-        indices[0]
+        indices[0],
     ):
-
         if idx < 0:
-
             continue
 
         results.append({
-
-            "text":
-                chunks[idx],
-
-            "score":
-                float(score)
-
+            "text": chunks[idx],
+            "score": float(score),
         })
 
     return results
@@ -708,21 +529,16 @@ def semantic_search(
 
 def search_knowledge(
     question: str,
-    top_k: int = 1
+    top_k: int = 1,
 ):
-
     q = question.lower().strip()
 
     if not q:
-
         return []
 
-    # =====================================================
     # FEES
-    # =====================================================
 
     fee_words = [
-
         "fee",
         "fees",
         "fee payment",
@@ -732,311 +548,174 @@ def search_knowledge(
         "payment of fees",
         "college fees",
         "tuition fee",
-        "tuition fees"
-
+        "tuition fees",
     ]
 
-    if any(
-        word in q
-        for word in fee_words
-    ):
+    if any(word in q for word in fee_words):
+        return [FEES_ANSWER]
 
-        return [
-            FEES_ANSWER
-        ]
-
-    # =====================================================
     # HOSTEL
-    # =====================================================
 
     if (
-
         "hostel" in q
-
         or "hostel room" in q
-
         or "room change" in q
-
         or "change my room" in q
-
         or "changing my room" in q
-
         or "room allotment" in q
-
     ):
+        return [HOSTEL_ANSWER]
 
-        return [
-            HOSTEL_ANSWER
-        ]
-
-    # =====================================================
     # HOLIDAYS
-    # =====================================================
 
     holiday_words = [
-
         "holiday",
         "holidays",
         "chhuti",
         "chhutti",
         "leave",
-        "vacation"
-
+        "vacation",
     ]
 
-    if any(
-        word in q
-        for word in holiday_words
-    ):
-
+    if any(word in q for word in holiday_words):
         return [
-
             "Holidays - November 2026\n\n"
-            + "\n".join(
-                HOLIDAYS
-            )
-
+            + "\n".join(HOLIDAYS)
         ]
 
-    # =====================================================
     # EXAMS
-    # IMPORTANT: EXAM SEARCH BEFORE FACULTY SEARCH
-    # =====================================================
 
     if (
-
         "exam" in q
-
         or "examination" in q
-
         or "paper" in q
-
         or "test" in q
-
     ):
-
-        # Artificial Intelligence
-
         if (
-
             "artificial intelligence" in q
-
             or "artificial" in q
-
-            or re.search(
-                r"\bai\b",
-                q
-            )
-
+            or re.search(r"\bai\b", q)
         ):
-
             print(
                 "Exact exam match: Artificial Intelligence"
             )
 
             return [
-                EXAMS[
-                    "artificial intelligence"
-                ]
+                EXAMS["artificial intelligence"]
             ]
 
-        # DBMS
-
-        if (
-
-            "dbms" in q
-
-            or "database" in q
-
-        ):
-
+        if "dbms" in q or "database" in q:
             print(
                 "Exact exam match: Database Management Systems"
             )
 
             return [
-                EXAMS[
-                    "database management systems"
-                ]
+                EXAMS["database management systems"]
             ]
 
-        # Computer Networks
-
         if (
-
             "computer network" in q
-
             or "computer networks" in q
-
             or "network" in q
-
         ):
-
             print(
                 "Exact exam match: Computer Networks"
             )
 
             return [
-                EXAMS[
-                    "computer networks"
-                ]
+                EXAMS["computer networks"]
             ]
 
-        # Cloud Computing
-
         if "cloud" in q:
-
             print(
                 "Exact exam match: Cloud Computing"
             )
 
             return [
-                EXAMS[
-                    "cloud computing"
-                ]
+                EXAMS["cloud computing"]
             ]
 
-        # Software Engineering
-
         if "software" in q:
-
             print(
                 "Exact exam match: Software Engineering"
             )
 
             return [
-                EXAMS[
-                    "software engineering"
-                ]
+                EXAMS["software engineering"]
             ]
 
-        # All exams
-
         return [
-
             "Examination Schedule - November 2026\n\n"
-            + "\n".join(
-                EXAMS.values()
-            )
-
+            + "\n".join(EXAMS.values())
         ]
 
-    # =====================================================
     # EVENTS
-    # =====================================================
 
     event_words = [
-
         "event",
         "events",
         "workshop",
         "orientation",
         "presentation",
-        "cultural"
-
+        "cultural",
     ]
 
-    if any(
-        word in q
-        for word in event_words
-    ):
-
+    if any(word in q for word in event_words):
         if "workshop" in q:
-
             return [
-                EVENTS[
-                    "technical workshop"
-                ]
+                EVENTS["technical workshop"]
             ]
 
         if "orientation" in q:
-
             return [
-                EVENTS[
-                    "student orientation programme"
-                ]
+                EVENTS["student orientation programme"]
             ]
 
-        if (
-            "project" in q
-            or "presentation" in q
-        ):
-
+        if "project" in q or "presentation" in q:
             return [
-                EVENTS[
-                    "student project presentation"
-                ]
+                EVENTS["student project presentation"]
             ]
 
         if "cultural" in q:
-
             return [
-                EVENTS[
-                    "annual cultural event"
-                ]
+                EVENTS["annual cultural event"]
             ]
 
         return [
-
             "Events - November 2026\n\n"
-            + "\n".join(
-                EVENTS.values()
-            )
-
+            + "\n".join(EVENTS.values())
         ]
 
-    # =====================================================
     # FACULTY DATABASE INFORMATION
-    # =====================================================
 
     faculty_results = search_faculty_information(
         question
     )
 
     if faculty_results:
-
         return faculty_results
 
-    # =====================================================
     # GENERAL RAG SEARCH
-    # =====================================================
 
     semantic_results = semantic_search(
-
         question,
-
-        top_k=top_k
-
+        top_k=top_k,
     )
 
     if not semantic_results:
-
         return []
 
-    # =====================================================
-    # SIMILARITY FILTER
-    # =====================================================
-
-    best_score = (
-        semantic_results[0]["score"]
-    )
+    best_score = semantic_results[0]["score"]
 
     print(
         "RAG similarity:",
-        round(
-            best_score,
-            4
-        )
+        round(best_score, 4),
     )
 
     if best_score < 0.25:
-
         return []
 
     return [
-
         item["text"]
-
         for item in semantic_results
-
     ]
