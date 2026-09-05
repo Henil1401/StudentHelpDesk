@@ -51,6 +51,8 @@ from app.email_service import (
     send_faculty_reply_email
 )
 
+from app.password_reset import router as password_reset_router
+
 from app.auth import (
     COOKIE_NAME,
     SESSION_HOURS,
@@ -73,6 +75,8 @@ app = FastAPI(
     version="1.2.0"
 )
 
+
+app.include_router(password_reset_router)
 
 # =========================================================
 # FRONTEND FILES
@@ -913,7 +917,9 @@ def chat_history(
 # =========================================================
 
 @app.get("/users")
-def get_all_students():
+def get_all_students(
+    current_user=Depends(require_roles("admin"))
+):
 
     try:
 
@@ -955,7 +961,8 @@ def get_all_students():
 
 @app.post("/users")
 def create_user(
-    request: UserRequest
+    request: UserRequest,
+    current_user=Depends(require_roles("admin"))
 ):
 
     try:
@@ -1028,7 +1035,8 @@ def create_user(
 
 @app.get("/users/{user_id}")
 def get_single_user(
-    user_id: int
+    user_id: int,
+    current_user=Depends(require_roles("admin"))
 ):
 
     try:
@@ -2188,7 +2196,10 @@ def login_user(
         max_age=SESSION_HOURS * 60 * 60,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=(
+            os.getenv("RENDER") == "true"
+            or os.getenv("APP_BASE_URL", "").startswith("https://")
+        ),
         path="/"
     )
 
@@ -2254,3 +2265,4 @@ def current_logged_in_user(
             current_user["role"]
         )
     }
+
