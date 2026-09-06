@@ -1,3 +1,5 @@
+import os
+import re
 import sqlite3
 from pathlib import Path
 from datetime import datetime
@@ -10,6 +12,120 @@ import uuid
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DATABASE_PATH = BASE_DIR / "student_helpdesk.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+USING_POSTGRES = DATABASE_URL.startswith(("postgresql://", "postgres://"))
+
+
+# Tables whose INSERT helpers return cursor.lastrowid.
+POSTGRES_ID_TABLES = {
+    "users",
+    "sessions",
+    "chats",
+    "ticket_replies",
+    "notifications",
+    "faculty",
+}
+
+
+def postgres_query(query):
+    """Translate the small SQLite SQL subset used by this project."""
+    statement = query.strip()
+
+    if statement.upper() == "BEGIN IMMEDIATE":
+        return "BEGIN"
+
+    converted = query.replace(
+        "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "SERIAL PRIMARY KEY"
+    )
+    converted = converted.replace(
+        "TEXT DEFAULT CURRENT_TIMESTAMP",
+        "TEXT DEFAULT (CURRENT_TIMESTAMP::text)"
+    )
+    converted = re.sub(
+        r"=\s*CURRENT_TIMESTAMP",
+        "= (CURRENT_TIMESTAMP::text)",
+        converted,
+        flags=re.IGNORECASE
+    )
+    converted = converted.replace("?", "%s")
+    return converted
+
+
+class PostgresCursor:
+    """Small DB-API compatibility wrapper for the existing SQLite helpers."""
+
+    def __init__(self, cursor):
+        self._cursor = cursor
+        self.lastrowid = None
+        self._ignored = False
+
+    @property
+    def rowcount(self):
+        return self._cursor.rowcount
+
+    def execute(self, query, values=None):
+        self.lastrowid = None
+        self._ignored = False
+
+        if query.strip().upper().startswith("PRAGMA "):
+            self._ignored = True
+            return self
+
+        converted = postgres_query(query)
+        match = re.match(
+            r"^\s*INSERT\s+INTO\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+            converted,
+            flags=re.IGNORECASE
+        )
+        table_name = match.group(1).lower() if match else ""
+
+        if (
+            table_name in POSTGRES_ID_TABLES
+            and "RETURNING" not in converted.upper()
+        ):
+            converted = converted.rstrip().rstrip(";") + " RETURNING id"
+            self._cursor.execute(converted, values or ())
+            inserted = self._cursor.fetchone()
+            self.lastrowid = inserted["id"]
+            return self
+
+        self._cursor.execute(converted, values or ())
+        return self
+
+    def fetchone(self):
+        if self._ignored:
+            return None
+        return self._cursor.fetchone()
+
+    def fetchall(self):
+        if self._ignored:
+            return []
+        return self._cursor.fetchall()
+
+    def close(self):
+        self._cursor.close()
+
+
+class PostgresConnection:
+    def __init__(self, connection):
+        self._connection = connection
+
+    def cursor(self):
+        return PostgresCursor(self._connection.cursor())
+
+    def execute(self, query, values=None):
+        cursor = self.cursor()
+        return cursor.execute(query, values)
+
+    def commit(self):
+        self._connection.commit()
+
+    def rollback(self):
+        self._connection.rollback()
+
+    def close(self):
+        self._connection.close()
 
 
 # =========================================================
@@ -17,6 +133,23 @@ DATABASE_PATH = BASE_DIR / "student_helpdesk.db"
 # =========================================================
 
 def get_connection():
+    if USING_POSTGRES:
+        try:
+            import psycopg
+            from psycopg.rows import dict_row
+        except ImportError as exc:
+            raise RuntimeError(
+                "PostgreSQL requires psycopg. Add psycopg[binary] to requirements.txt."
+            ) from exc
+
+        connection = psycopg.connect(
+            DATABASE_URL,
+            row_factory=dict_row,
+            connect_timeout=20,
+            prepare_threshold=None
+        )
+        return PostgresConnection(connection)
+
     connection = sqlite3.connect(str(DATABASE_PATH))
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
@@ -38,12 +171,27 @@ def rows_to_dict(rows):
 
 
 def add_column_if_missing(cursor, table_name, column_name, column_definition):
-    columns = [
-        row["name"]
-        for row in cursor.execute(
+    if not re.fullmatch(r"[a-z_][a-z0-9_]*", table_name):
+        raise ValueError("Invalid table name.")
+    if not re.fullmatch(r"[a-z_][a-z0-9_]*", column_name):
+        raise ValueError("Invalid column name.")
+
+    if USING_POSTGRES:
+        rows = cursor.execute(
+            """
+            SELECT column_name AS name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = ?
+            """,
+            (table_name,)
+        ).fetchall()
+    else:
+        rows = cursor.execute(
             f"PRAGMA table_info({table_name})"
         ).fetchall()
-    ]
+
+    columns = [row["name"] for row in rows]
 
     if column_name not in columns:
         cursor.execute(
@@ -1204,14 +1352,24 @@ def database_status():
     cursor = connection.cursor()
 
     try:
-        tables = cursor.execute(
-            """
-            SELECT name
-            FROM sqlite_master
-            WHERE type = 'table'
-            ORDER BY name
-            """
-        ).fetchall()
+        if USING_POSTGRES:
+            tables = cursor.execute(
+                """
+                SELECT table_name AS name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                ORDER BY table_name
+                """
+            ).fetchall()
+        else:
+            tables = cursor.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE type = 'table'
+                ORDER BY name
+                """
+            ).fetchall()
 
         return [row["name"] for row in tables]
 
