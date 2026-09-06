@@ -44,7 +44,7 @@ def send_email(to_email, subject, message):
                 "to": [{"email": to_email}],
                 "subject": subject,
                 "textContent": message,
-                # Do not rewrite password reset links for marketing tracking.
+                # Password-recovery messages do not need marketing tracking.
                 "headers": {"X-Mailin-Track-Click": "0", "X-Mailin-Track-Open": "0"},
             }
             request = Request(
@@ -80,7 +80,7 @@ def send_email(to_email, subject, message):
         print("EMAIL: Accepted by SMTP server for delivery.")
         return True
     except HTTPError as exc:
-        # Never print provider response bodies, API keys, message bodies or reset links.
+        # Never print provider response bodies, API keys, message bodies or codes.
         print("EMAIL API ERROR: HTTP", exc.code)
         return False
     except Exception as exc:
@@ -156,19 +156,20 @@ AI Student Help Desk
     return send_email(to_email, subject, message)
 
 
-def send_password_reset_email(to_email, reset_link, expires_minutes=20):
+def send_password_reset_code_email(to_email, code, expires_minutes=10):
     return send_email(
         to_email,
-        "AI Student Help Desk - Reset your password",
+        "AI Student Help Desk - Password reset code",
         f"""Hello,
 
 We received a request to reset your AI Student Help Desk password.
 
-Open this link to choose a new password:
-{reset_link}
+Your 6-digit verification code is:
 
-This link expires in {expires_minutes} minutes and can only be used once.
-Do not share this link. If you did not request this, ignore this email;
+{code}
+
+This code expires in {expires_minutes} minutes and can only be used once.
+Do not share this code. If you did not request this, ignore this email;
 your password has not changed.
 
 AI Student Help Desk
@@ -183,5 +184,5 @@ def send_password_changed_email(to_email):
         "Your AI Student Help Desk password was changed successfully.\n"
         "All previous login sessions have been signed out.\n"
         "If you did not make this change, contact your help desk administrator immediately.\n"
-        "Never send anyone your password or reset link.",
+        "Never send anyone your password or verification code.",
     )
