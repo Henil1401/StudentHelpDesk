@@ -947,5 +947,337 @@
             await Promise.allSettled([loadTickets(),loadUsers(),loadFaculty(),loadHistory()]);
         });
     </script>
+<!-- =====================================================
+     CUTE FLOATING AI ROBOT
+====================================================== -->
+<style>
+.cute-ai-buddy{
+    position:fixed;
+    right:24px;
+    bottom:24px;
+    z-index:999;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+.cute-ai-buddy::before{
+    content:"";
+    position:absolute;
+    z-index:0;
+    right:-7px;
+    bottom:-7px;
+    width:86px;
+    height:86px;
+    border-radius:29px;
+    opacity:.72;
+    background:conic-gradient(from 0deg,#4f46e5,#7c3aed,#ec4899,#06b6d4,#4f46e5);
+    filter:blur(1px);
+    animation:cuteOrbitRing 4s linear infinite;
+}
+
+.cute-ai-message{
+    position:absolute;
+    z-index:3;
+    right:0;
+    bottom:92px;
+    width:220px;
+    padding:13px 15px;
+    border:1px solid #c4b5fd;
+    border-radius:16px 16px 4px 16px;
+    color:#0f2747;
+    background:white;
+    box-shadow:0 14px 35px rgba(15,35,65,.16);
+    font-size:12px;
+    font-weight:700;
+    line-height:1.5;
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transform:translateY(12px) scale(.92);
+    transform-origin:bottom right;
+    transition:opacity .3s ease,visibility .3s ease,transform .3s ease;
+}
+
+.cute-ai-message.show{
+    opacity:1;
+    visibility:visible;
+    transform:translateY(0) scale(1);
+    animation:cuteMessagePop .45s cubic-bezier(.22,1,.36,1);
+}
+
+.cute-ai-button{
+    position:relative;
+    z-index:2;
+    width:72px;
+    height:72px;
+    display:grid;
+    place-items:center;
+    padding:0;
+    border:3px solid rgba(255,255,255,.9);
+    border-radius:24px;
+    color:inherit;
+    background:linear-gradient(135deg,#4f46e5,#7c3aed,#06b6d4);
+    background-size:220% 220%;
+    box-shadow:0 14px 30px rgba(124,58,237,.3),inset 0 1px 2px rgba(255,255,255,.4);
+    cursor:pointer;
+    outline:none;
+    animation:cuteRobotFloat 3s ease-in-out infinite,cuteGradientShift 6s ease-in-out infinite;
+    transition:transform .2s ease,box-shadow .2s ease;
+}
+
+.cute-ai-button:hover{
+    box-shadow:0 18px 40px rgba(124,58,237,.42),inset 0 1px 2px rgba(255,255,255,.4);
+}
+
+.cute-ai-face{
+    position:relative;
+    width:47px;
+    height:39px;
+    display:block;
+    border:2px solid rgba(255,255,255,.82);
+    border-radius:15px;
+    background:linear-gradient(145deg,#ecfeff,#ddd6fe);
+    box-shadow:inset 0 -4px 8px rgba(124,58,237,.11);
+    animation:cuteFaceWiggle 5s ease-in-out infinite;
+}
+
+.cute-ai-antenna{
+    position:absolute;
+    top:-11px;
+    left:50%;
+    width:3px;
+    height:10px;
+    border-radius:5px;
+    background:#dbeafe;
+    transform:translateX(-50%);
+}
+
+.cute-ai-antenna::before{
+    content:"";
+    position:absolute;
+    top:-5px;
+    left:50%;
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:#fde047;
+    box-shadow:0 0 9px #fde047;
+    transform:translateX(-50%);
+    animation:cuteAntennaGlow 1.4s ease-in-out infinite;
+}
+
+.cute-ai-eye{
+    position:absolute;
+    top:12px;
+    width:7px;
+    height:9px;
+    border-radius:50%;
+    background:#312e81;
+    animation:cuteRobotBlink 4s infinite;
+}
+
+.cute-ai-eye.left{left:10px;}
+.cute-ai-eye.right{right:10px;}
+
+.cute-ai-mouth{
+    position:absolute;
+    left:50%;
+    bottom:7px;
+    width:15px;
+    height:7px;
+    border-bottom:3px solid #7c3aed;
+    border-radius:0 0 15px 15px;
+    transform:translateX(-50%);
+}
+
+.cute-ai-buddy.talking .cute-ai-mouth{
+    animation:cuteRobotTalk .38s ease-in-out 4;
+}
+
+.cute-sparkle{
+    position:absolute;
+    color:#fde047;
+    pointer-events:none;
+    text-shadow:0 0 8px currentColor;
+    animation:cuteSparkle 2s ease-in-out infinite;
+}
+
+.cute-sparkle.one{top:-9px;right:-7px;font-size:17px;}
+.cute-sparkle.two{top:13px;left:-12px;font-size:12px;animation-delay:.65s;}
+.cute-sparkle.three{right:-12px;bottom:5px;font-size:11px;animation-delay:1.2s;}
+.cute-sparkle.four{left:-5px;bottom:-13px;font-size:13px;animation-delay:1.55s;color:#f9a8d4;}
+
+.cute-click-star{
+    position:absolute;
+    z-index:4;
+    right:30px;
+    bottom:30px;
+    color:#fde047;
+    pointer-events:none;
+    font-size:14px;
+    text-shadow:0 0 9px currentColor;
+    animation:cuteStarBurst .78s ease-out forwards;
+}
+
+@keyframes cuteRobotFloat{
+    0%,100%{transform:translateY(0) rotate(0deg);}
+    50%{transform:translateY(-8px) rotate(2deg);}
+}
+
+@keyframes cuteRobotBlink{
+    0%,44%,48%,100%{transform:scaleY(1);}
+    46%{transform:scaleY(.12);}
+}
+
+@keyframes cuteAntennaGlow{
+    0%,100%{opacity:.65;transform:translateX(-50%) scale(.85);}
+    50%{opacity:1;transform:translateX(-50%) scale(1.18);}
+}
+
+@keyframes cuteSparkle{
+    0%,100%{opacity:.35;transform:scale(.7) rotate(0deg);}
+    50%{opacity:1;transform:scale(1.25) rotate(90deg);}
+}
+
+@keyframes cuteGradientShift{
+    0%,100%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+}
+
+@keyframes cuteOrbitRing{
+    from{transform:rotate(0deg) scale(.98);}
+    50%{transform:rotate(180deg) scale(1.06);}
+    to{transform:rotate(360deg) scale(.98);}
+}
+
+@keyframes cuteFaceWiggle{
+    0%,72%,100%{transform:rotate(0deg);}
+    78%{transform:rotate(-4deg);}
+    84%{transform:rotate(4deg);}
+    90%{transform:rotate(0deg);}
+}
+
+@keyframes cuteMessagePop{
+    0%{opacity:0;transform:translateY(12px) scale(.82) rotate(2deg);}
+    70%{transform:translateY(-3px) scale(1.03) rotate(-1deg);}
+    100%{opacity:1;transform:translateY(0) scale(1) rotate(0deg);}
+}
+
+@keyframes cuteRobotTalk{
+    0%,100%{height:7px;border-radius:0 0 15px 15px;}
+    50%{height:10px;border-radius:50%;}
+}
+
+@keyframes cuteStarBurst{
+    0%{opacity:1;transform:translate(0,0) scale(.6) rotate(0deg);}
+    100%{opacity:0;transform:translate(var(--star-x),var(--star-y)) scale(1.35) rotate(150deg);}
+}
+
+@media(max-width:600px){
+    .cute-ai-buddy{right:15px;bottom:15px;}
+    .cute-ai-button{width:62px;height:62px;border-radius:20px;}
+    .cute-ai-face{width:41px;height:35px;}
+    .cute-ai-message{bottom:79px;width:195px;}
+}
+
+@media(prefers-reduced-motion:reduce){
+    .cute-ai-button,
+    .cute-ai-eye,
+    .cute-ai-antenna::before,
+    .cute-sparkle,
+    .cute-ai-face,
+    .cute-ai-buddy::before{
+        animation:none !important;
+    }
+}
+</style>
+
+<div class="cute-ai-buddy" id="cuteAiBuddy">
+    <div class="cute-ai-message" id="cuteAiMessage" role="status">
+        Hi Admin! 👋 Everything is under control! ✨
+    </div>
+
+    <button
+        type="button"
+        class="cute-ai-button"
+        id="cuteAiButton"
+        aria-label="Open AI assistant greeting"
+        aria-expanded="false"
+    >
+        <span class="cute-sparkle one">✦</span>
+        <span class="cute-sparkle two">✦</span>
+        <span class="cute-sparkle three">✦</span>
+        <span class="cute-sparkle four">♥</span>
+
+        <span class="cute-ai-face">
+            <span class="cute-ai-antenna"></span>
+            <span class="cute-ai-eye left"></span>
+            <span class="cute-ai-eye right"></span>
+            <span class="cute-ai-mouth"></span>
+        </span>
+    </button>
+</div>
+
+<script>
+(function(){
+    "use strict";
+
+    const buddy=document.getElementById("cuteAiBuddy");
+    const button=document.getElementById("cuteAiButton");
+    const message=document.getElementById("cuteAiMessage");
+
+    if(!buddy||!button||!message){return;}
+
+    let closeTimer;
+
+    function hideMessage(){
+        message.classList.remove("show");
+        buddy.classList.remove("talking");
+        button.setAttribute("aria-expanded","false");
+    }
+
+    function showMessage(){
+        window.clearTimeout(closeTimer);
+        message.classList.add("show");
+        buddy.classList.add("talking");
+        button.setAttribute("aria-expanded","true");
+        closeTimer=window.setTimeout(hideMessage,4000);
+    }
+
+    function createCuteBurst(){
+        const symbols=["✦","✧","♥","✦","✧","♥","✦","✧"];
+
+        symbols.forEach(function(symbol,index){
+            const star=document.createElement("span");
+            const angle=(Math.PI*2*index)/symbols.length;
+            const distance=48+(index%2)*13;
+
+            star.className="cute-click-star";
+            star.textContent=symbol;
+            star.style.setProperty("--star-x",Math.cos(angle)*distance+"px");
+            star.style.setProperty("--star-y",Math.sin(angle)*distance+"px");
+
+            if(symbol==="♥"){star.style.color="#f9a8d4";}
+
+            buddy.appendChild(star);
+            window.setTimeout(function(){star.remove();},850);
+        });
+    }
+
+    button.addEventListener("click",function(){
+        createCuteBurst();
+
+        if(message.classList.contains("show")){
+            window.clearTimeout(closeTimer);
+            hideMessage();
+            return;
+        }
+
+        showMessage();
+    });
+
+    window.setTimeout(showMessage,900);
+})();
+</script>
+
 </body>
 </html>
