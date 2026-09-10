@@ -50,7 +50,7 @@ STOP_WORDS = {
     "that",
     "please",
     "tell",
-    "me"
+    "me",
 }
 
 
@@ -147,53 +147,36 @@ def calculate_faculty_score(
 
     score = 0
 
-
-    # =====================================================
-    # TITLE DIRECT MATCH
-    # =====================================================
+    # Title direct match
 
     if (
         title
         and title in question_text
     ):
-
         score += 100
 
-
-    # =====================================================
-    # QUESTION DIRECTLY APPEARS IN TITLE
-    # =====================================================
+    # Question directly appears in title
 
     if (
         question_text
         and question_text in title
     ):
-
         score += 100
 
-
-    # =====================================================
-    # KEYWORD MATCHING
-    # =====================================================
+    # Keyword matching
 
     for keyword in question_keywords:
 
         if keyword in title:
-
             score += 12
 
         if keyword in content:
-
             score += 6
 
         if keyword in category:
-
             score += 3
 
-
-    # =====================================================
-    # AI / ARTIFICIAL INTELLIGENCE ALIAS
-    # =====================================================
+    # AI / Artificial Intelligence alias
 
     if (
         (
@@ -224,9 +207,7 @@ def calculate_faculty_score(
             in content
         )
     ):
-
         score += 15
-
 
     return score
 
@@ -255,10 +236,8 @@ def search_faculty_information(
 
         return []
 
-
     best_item = None
     best_score = 0
-
 
     for item in information:
 
@@ -266,33 +245,25 @@ def search_faculty_information(
             item,
             dict
         ):
-
             continue
-
 
         score = calculate_faculty_score(
             question,
             item
         )
 
-
         if score > best_score:
 
             best_score = score
             best_item = item
 
-
-    # =====================================================
-    # REQUIRE A MEANINGFUL MATCH
-    # =====================================================
+    # Require a meaningful match
 
     if (
         best_item is None
         or best_score < 10
     ):
-
         return []
-
 
     title = str(
         best_item.get(
@@ -301,7 +272,6 @@ def search_faculty_information(
         )
     ).strip()
 
-
     content = str(
         best_item.get(
             "content",
@@ -309,14 +279,8 @@ def search_faculty_information(
         )
     ).strip()
 
-
     if not content:
-
         return []
-
-
-    # Put title + content together so clean_answer()
-    # can extract date, time and venue correctly.
 
     if title:
 
@@ -330,10 +294,55 @@ def search_faculty_information(
 
         result_text = content
 
-
     return [
         result_text
     ]
+
+
+# =========================================================
+# CHECK OFFICIAL CALENDAR QUESTION
+# =========================================================
+
+def is_official_calendar_question(
+    question: str
+):
+
+    normalized_question = normalize_text(
+        question
+    )
+
+    official_calendar_phrases = [
+        "diwali",
+        "gandhi jayanti",
+        "dussehra",
+        "christmas",
+        "republic day",
+        "mid sem",
+        "mid semester",
+        "end sem",
+        "end semester",
+        "term end",
+        "internship",
+        "remedial",
+        "internal submission",
+        "viva",
+        "semester result",
+        "academic week",
+    ]
+
+    if any(
+        phrase in normalized_question
+        for phrase in official_calendar_phrases
+    ):
+        return True
+
+    if re.search(
+        r"\bweek\s*\d{1,2}\b",
+        normalized_question
+    ):
+        return True
+
+    return False
 
 
 # =========================================================
@@ -345,7 +354,37 @@ def retrieve_knowledge(
 ):
 
     # =====================================================
-    # 1. FACULTY DATABASE FIRST
+    # 1. OFFICIAL ACADEMIC CALENDAR FIRST
+    # =====================================================
+
+    if is_official_calendar_question(
+        question
+    ):
+
+        try:
+
+            official_results = search_knowledge(
+                question,
+                top_k=1
+            )
+
+            if official_results:
+
+                print(
+                    "Official academic calendar matched."
+                )
+
+                return official_results
+
+        except Exception as error:
+
+            print(
+                "Official calendar retrieval error:",
+                error
+            )
+
+    # =====================================================
+    # 2. FACULTY DATABASE
     # =====================================================
 
     faculty_results = (
@@ -354,14 +393,16 @@ def retrieve_knowledge(
         )
     )
 
-
     if faculty_results:
+
+        print(
+            "Faculty database information matched."
+        )
 
         return faculty_results
 
-
     # =====================================================
-    # 2. UNIVERSITY PDF / RAG
+    # 3. UNIVERSITY PDF / GENERAL RAG
     # =====================================================
 
     try:
@@ -379,6 +420,5 @@ def retrieve_knowledge(
         )
 
         return []
-
 
     return results or []
