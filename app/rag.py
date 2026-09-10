@@ -18,7 +18,9 @@ KNOWLEDGE_DIR = BASE_DIR / "knowledge_base"
 
 TEXT_FILE = KNOWLEDGE_DIR / "knowledge.txt"
 
-PDF_FILE = KNOWLEDGE_DIR / "silver_oak_university.pdf"
+PDF_FILES = sorted(
+    KNOWLEDGE_DIR.glob("*.pdf")
+)
 
 
 # =========================================================
@@ -35,9 +37,9 @@ if TEXT_FILE.exists():
     except Exception as e:
         print("Knowledge file error:", e)
 
-if PDF_FILE.exists():
+for pdf_file in PDF_FILES:
     try:
-        reader = PdfReader(str(PDF_FILE))
+        reader = PdfReader(str(pdf_file))
 
         for page in reader.pages:
             page_text = page.extract_text()
@@ -45,8 +47,10 @@ if PDF_FILE.exists():
             if page_text:
                 text_parts.append(page_text)
 
+        print("PDF loaded:", pdf_file.name)
+
     except Exception as e:
-        print("PDF reading error:", e)
+        print("PDF reading error:", pdf_file.name, e)
 
 
 # =========================================================
@@ -61,7 +65,7 @@ print("====================================")
 print("AI STUDENT HELP DESK - RAG")
 print("====================================")
 print("Knowledge file:", TEXT_FILE.exists())
-print("PDF loaded:", PDF_FILE.exists())
+print("PDF files loaded:", len(PDF_FILES))
 
 
 # =========================================================
@@ -70,19 +74,19 @@ print("PDF loaded:", PDF_FILE.exists())
 
 EXAMS = {
     "artificial intelligence":
-        "Artificial Intelligence exam is on 10 November 2026 from 10:00 AM to 12:00 PM in Room A-101.",
+        "The official subject-wise Artificial Intelligence exam date, time and room are not available in the academic calendar. The End-Semester Regular/Remedial examination session for Semester 3, 5 and 7 is scheduled from 19 November 2026 to 5 December 2026.",
 
     "database management systems":
-        "Database Management Systems exam is on 12 November 2026 from 10:00 AM to 12:00 PM in Room A-102.",
+        "The official subject-wise Database Management Systems exam date, time and room are not available in the academic calendar. The End-Semester Regular/Remedial examination session for Semester 3, 5 and 7 is scheduled from 19 November 2026 to 5 December 2026.",
 
     "computer networks":
-        "Computer Networks exam is on 16 November 2026 from 10:00 AM to 12:00 PM in Room A-103.",
+        "The official subject-wise Computer Networks exam date, time and room are not available in the academic calendar. The End-Semester Regular/Remedial examination session for Semester 3, 5 and 7 is scheduled from 19 November 2026 to 5 December 2026.",
 
     "cloud computing":
-        "Cloud Computing exam is on 19 November 2026 from 10:00 AM to 12:00 PM in Room A-101.",
+        "The official subject-wise Cloud Computing exam date, time and room are not available in the academic calendar. The End-Semester Regular/Remedial examination session for Semester 3, 5 and 7 is scheduled from 19 November 2026 to 5 December 2026.",
 
     "software engineering":
-        "Software Engineering exam is on 23 November 2026 from 10:00 AM to 12:00 PM in Room A-104.",
+        "The official subject-wise Software Engineering exam date, time and room are not available in the academic calendar. The End-Semester Regular/Remedial examination session for Semester 3, 5 and 7 is scheduled from 19 November 2026 to 5 December 2026.",
 }
 
 
@@ -110,10 +114,90 @@ EVENTS = {
 # =========================================================
 
 HOLIDAYS = [
-    "9 November 2026 - Diwali Holiday",
-    "10 November 2026 - Academic Holiday as scheduled",
-    "24 November 2026 - Guru Nanak Jayanti",
+    "2 October 2026 - Gandhi Jayanti",
+    "21 October 2026 - Dussehra",
+    "6 November 2026 to 14 November 2026 - Diwali Vacation",
+    "25 December 2026 - Christmas",
+    "26 January 2027 - Republic Day",
 ]
+
+
+# =========================================================
+# OFFICIAL ACADEMIC CALENDAR 2026-2027
+# =========================================================
+
+ACADEMIC_CALENDAR = {
+    "mid_sem_practical":
+        "The Mid-Sem Practical Examination for SOIS Semester 3, 5 and 7 will be conducted from 21 September 2026 to 26 September 2026.",
+
+    "mid_sem_exam":
+        "The Mid-Sem Examination for Semester 3, 5 and 7 will be conducted from 5 October 2026 to 10 October 2026.",
+
+    "mid_sem_result":
+        "The Mid-Semester Examination result will be declared on 17 October 2026.",
+
+    "remedial_internal_viva":
+        "The Mid-Sem Remedial Examination, Internal Submission and Viva will be conducted from 26 October 2026 to 31 October 2026.",
+
+    "term_end":
+        "The academic term will end on 31 October 2026.",
+
+    "remedial_result":
+        "The Mid-Semester Remedial Examination result will be declared on 5 November 2026.",
+
+    "diwali_vacation":
+        "The Diwali vacation will be from 6 November 2026 to 14 November 2026.",
+
+    "end_sem_internship_programmes":
+        "The End-Semester Theory and Practical Regular/Remedial examination session for internship-applicable programmes will be conducted from 19 November 2026 to 28 November 2026.",
+
+    "end_sem_odd_semesters":
+        "The End-Semester Theory and Practical Regular/Remedial examination session for Semester 3, 5 and 7 will be conducted from 19 November 2026 to 5 December 2026.",
+
+    "end_sem_remedial_even_semesters":
+        "The End-Semester Theory and Practical Remedial examination session for Semester 2, 4, 6 and 8 will be conducted from 19 November 2026 to 20 December 2026.",
+
+    "internship":
+        "The internship period for applicable programmes will be from 30 November 2026 to 9 January 2027.",
+
+    "semester_5_result":
+        "The End-Semester Regular/Remedial Examination result declaration phase for Semester 5 will start on 19 December 2026.",
+
+    "semester_3_7_result":
+        "The End-Semester Regular/Remedial Examination result declaration phase for Semester 3 and 7 will start on 9 January 2027.",
+}
+
+
+ACADEMIC_WEEKS = {
+    1: "21 June 2026 to 27 June 2026",
+    2: "28 June 2026 to 4 July 2026",
+    3: "5 July 2026 to 11 July 2026",
+    4: "12 July 2026 to 18 July 2026",
+    5: "19 July 2026 to 25 July 2026",
+    6: "26 July 2026 to 1 August 2026",
+    7: "2 August 2026 to 8 August 2026",
+    8: "9 August 2026 to 15 August 2026",
+    9: "16 August 2026 to 22 August 2026",
+    10: "23 August 2026 to 29 August 2026",
+    11: "30 August 2026 to 5 September 2026",
+    12: "6 September 2026 to 12 September 2026",
+    13: "13 September 2026 to 19 September 2026",
+    14: "20 September 2026 to 26 September 2026",
+    15: "27 September 2026 to 3 October 2026",
+    16: "4 October 2026 to 10 October 2026",
+    17: "11 October 2026 to 17 October 2026",
+    18: "18 October 2026 to 24 October 2026",
+    19: "25 October 2026 to 31 October 2026",
+    20: "1 November 2026 to 7 November 2026",
+    21: "8 November 2026 to 14 November 2026",
+    22: "15 November 2026 to 21 November 2026",
+    23: "22 November 2026 to 28 November 2026",
+    24: "29 November 2026 to 5 December 2026",
+    25: "6 December 2026 to 12 December 2026",
+    26: "13 December 2026 to 19 December 2026",
+    27: "20 December 2026 to 26 December 2026",
+    28: "27 December 2026 to 2 January 2027",
+}
 
 
 # =========================================================
@@ -532,6 +616,8 @@ def search_knowledge(
     top_k: int = 1,
 ):
     q = question.lower().strip()
+    normalized_q = re.sub(r"[-_]+", " ", q)
+    normalized_q = re.sub(r"\s+", " ", normalized_q).strip()
 
     if not q:
         return []
@@ -566,6 +652,165 @@ def search_knowledge(
     ):
         return [HOSTEL_ANSWER]
 
+    # OFFICIAL ACADEMIC CALENDAR
+
+    week_match = re.search(
+        r"\bweek\s*(\d{1,2})\b",
+        normalized_q,
+    )
+
+    if week_match:
+        week_number = int(week_match.group(1))
+        week_dates = ACADEMIC_WEEKS.get(week_number)
+
+        if week_dates:
+            return [
+                f"Academic Week {week_number} is from {week_dates}."
+            ]
+
+    if "diwali" in normalized_q:
+        return [
+            ACADEMIC_CALENDAR["diwali_vacation"]
+        ]
+
+    if "gandhi jayanti" in normalized_q:
+        return [
+            "The university will observe Gandhi Jayanti on 2 October 2026."
+        ]
+
+    if "dussehra" in normalized_q:
+        return [
+            "The university will observe the Dussehra holiday on 21 October 2026."
+        ]
+
+    if "christmas" in normalized_q:
+        return [
+            "The university will observe the Christmas holiday on 25 December 2026."
+        ]
+
+    if "republic day" in normalized_q:
+        return [
+            "The university will observe Republic Day on 26 January 2027."
+        ]
+
+    if (
+        "remedial" in normalized_q
+        and "result" in normalized_q
+    ):
+        return [
+            ACADEMIC_CALENDAR["remedial_result"]
+        ]
+
+    if (
+        "mid sem" in normalized_q
+        and (
+            "remedial" in normalized_q
+            or "internal" in normalized_q
+            or "viva" in normalized_q
+        )
+    ):
+        return [
+            ACADEMIC_CALENDAR["remedial_internal_viva"]
+        ]
+
+    if (
+        "mid sem" in normalized_q
+        and "practical" in normalized_q
+    ):
+        return [
+            ACADEMIC_CALENDAR["mid_sem_practical"]
+        ]
+
+    if (
+        "mid sem" in normalized_q
+        and "result" in normalized_q
+    ):
+        return [
+            ACADEMIC_CALENDAR["mid_sem_result"]
+        ]
+
+    if "mid sem" in normalized_q:
+        return [
+            ACADEMIC_CALENDAR["mid_sem_exam"]
+        ]
+
+    if "term end" in normalized_q:
+        return [
+            ACADEMIC_CALENDAR["term_end"]
+        ]
+
+    if (
+        "internship" in normalized_q
+        and "exam" not in normalized_q
+        and "examination" not in normalized_q
+        and "end sem" not in normalized_q
+        and "end semester" not in normalized_q
+    ):
+        return [
+            ACADEMIC_CALENDAR["internship"]
+        ]
+
+    if (
+        "result" in normalized_q
+        and re.search(r"\b(?:sem|semester)\s*5\b", normalized_q)
+    ):
+        return [
+            ACADEMIC_CALENDAR["semester_5_result"]
+        ]
+
+    if (
+        "result" in normalized_q
+        and (
+            re.search(r"\b(?:sem|semester)\s*3\b", normalized_q)
+            or re.search(r"\b(?:sem|semester)\s*7\b", normalized_q)
+        )
+    ):
+        return [
+            ACADEMIC_CALENDAR["semester_3_7_result"]
+        ]
+
+    if (
+        "result" in normalized_q
+        and (
+            "semester" in normalized_q
+            or "sem" in normalized_q
+        )
+    ):
+        return [
+            ACADEMIC_CALENDAR["semester_5_result"]
+            + "\n"
+            + ACADEMIC_CALENDAR["semester_3_7_result"]
+        ]
+
+    if (
+        "end sem" in normalized_q
+        or "end semester" in normalized_q
+    ):
+        if re.search(
+            r"\b(?:sem|semester)\s*(?:2|4|6|8)\b",
+            normalized_q,
+        ):
+            return [
+                ACADEMIC_CALENDAR[
+                    "end_sem_remedial_even_semesters"
+                ]
+            ]
+
+        if "internship" in normalized_q:
+            return [
+                ACADEMIC_CALENDAR[
+                    "end_sem_internship_programmes"
+                ]
+            ]
+
+        return [
+            ACADEMIC_CALENDAR["end_sem_odd_semesters"]
+            + "\n"
+            + ACADEMIC_CALENDAR[
+                "end_sem_remedial_even_semesters"
+            ]
+        ]
+
     # HOLIDAYS
 
     holiday_words = [
@@ -579,7 +824,7 @@ def search_knowledge(
 
     if any(word in q for word in holiday_words):
         return [
-            "Holidays - November 2026\n\n"
+            "Academic Holidays - 2026-2027\n\n"
             + "\n".join(HOLIDAYS)
         ]
 
@@ -645,8 +890,16 @@ def search_knowledge(
             ]
 
         return [
-            "Examination Schedule - November 2026\n\n"
-            + "\n".join(EXAMS.values())
+            "Official Examination Sessions\n\n"
+            + ACADEMIC_CALENDAR["mid_sem_practical"]
+            + "\n"
+            + ACADEMIC_CALENDAR["mid_sem_exam"]
+            + "\n"
+            + ACADEMIC_CALENDAR["end_sem_odd_semesters"]
+            + "\n"
+            + ACADEMIC_CALENDAR[
+                "end_sem_remedial_even_semesters"
+            ]
         ]
 
     # EVENTS
