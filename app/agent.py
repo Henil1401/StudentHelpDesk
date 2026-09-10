@@ -50,53 +50,6 @@ def clean_answer(
 
 
     # =====================================================
-    # ARTIFICIAL INTELLIGENCE EXAM
-    # =====================================================
-
-    if (
-        (
-            "artificial intelligence" in q
-            or re.search(r"\bai\b", q)
-            or "artificial" in q
-        )
-        and (
-            "exam" in q
-            or "examination" in q
-            or "paper" in q
-            or "test" in q
-            or q in follow_up
-        )
-    ):
-
-        if re.search(
-            r"\bwhen\b|\bdate\b|\bwhich date\b",
-            q
-        ):
-
-            return "10 November 2026"
-
-        if re.search(
-            r"\bwhat time\b|\btime\b|\bat what time\b",
-            q
-        ):
-
-            return "10:00 AM to 12:00 PM"
-
-        if re.search(
-            r"\bwhere\b|\bvenue\b|\broom\b|\bwhich room\b",
-            q
-        ):
-
-            return "Room A-101"
-
-        return (
-            "Artificial Intelligence exam is on "
-            "10 November 2026 from 10:00 AM to 12:00 PM "
-            "in Room A-101."
-        )
-
-
-    # =====================================================
     # TIME QUESTION
     # =====================================================
 
@@ -176,6 +129,31 @@ def clean_answer(
     )
 
     if is_date_question:
+
+        # Return the complete date range before checking a single date.
+        # Example: 6 November 2026 to 14 November 2026
+        date_range_match = re.search(
+            r"\b(?:from\s+)?"
+            r"\d{1,2}\s+"
+            r"(?:January|February|March|April|May|June|July|"
+            r"August|September|October|November|December)"
+            r"\s+\d{4}\s+"
+            r"(?:to|-)\s+"
+            r"\d{1,2}\s+"
+            r"(?:January|February|March|April|May|June|July|"
+            r"August|September|October|November|December)"
+            r"\s+\d{4}\b",
+            full_text,
+            re.IGNORECASE
+        )
+
+        if date_range_match:
+            answer = date_range_match.group(0)
+
+            if answer.lower().startswith("from "):
+                answer = answer[5:]
+
+            return answer
 
         date_match = re.search(
             r"\b\d{1,2}\s+"
